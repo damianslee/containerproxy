@@ -168,11 +168,11 @@ public class DockerSwarmBackend extends AbstractDockerBackend {
 
             String serviceName = spec.getResourceName().getValueOrDefault("sp-service-" + proxy.getId() + "-" + initialContainer.getIndex());
             ServiceSpec.Builder serviceSpecBuilder = ServiceSpec.builder()
-                .networks(networks)
                 .name(serviceName)
                 .taskTemplate(TaskSpec.builder()
                     .containerSpec(containerSpec)
                     .restartPolicy(RestartPolicy.builder().condition(RestartPolicy.RESTART_POLICY_NONE).build())
+                    .networks(networks)
                     .resources(ResourceRequirements.builder()
                         .reservations(reservationsBuilder.build())
                         .limits(limitsBuilder.build())
