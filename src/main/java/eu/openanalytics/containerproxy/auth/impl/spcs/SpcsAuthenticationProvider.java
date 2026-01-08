@@ -35,9 +35,10 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -50,6 +51,7 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
 
     private final Set<String> adminGroups;
     private final Environment environment;
+    private final String computeWarehouse;
 
     public SpcsAuthenticationProvider(Environment environment) {
         this.environment = environment;
@@ -69,6 +71,12 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
             }
             adminGroups.add(groupName.toUpperCase());
         }
+        
+        // Load optional compute warehouse for SPCS authentication admin check
+        this.computeWarehouse = environment.getProperty("proxy.spcs.compute-warehouse");
+        if (computeWarehouse != null && !computeWarehouse.isEmpty()) {
+            logger.debug("SPCS compute warehouse configured for admin role validation: {}", computeWarehouse);
+        }
     }
 
     @Override
@@ -80,9 +88,17 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
             
             Collection<GrantedAuthority> authorities = new ArrayList<>();
             
-            // Only check admin roles if user token is present (required for caller's rights context)
-            if (spcsIngressUserToken != null && !spcsIngressUserToken.isBlank() && !adminGroups.isEmpty()) {
-                logger.debug("User token available, checking admin roles for {} admin groups", adminGroups.size());
+            // Check conditions that would skip admin role validation (guard clauses)
+            if (adminGroups.isEmpty()) {
+                logger.debug("No admin groups configured, skipping admin role check");
+            } else if (computeWarehouse == null || computeWarehouse.isEmpty()) {
+                logger.debug("Compute warehouse not configured (proxy.spcs.compute-warehouse), skipping admin role check");
+            } else if (spcsIngressUserToken == null || spcsIngressUserToken.isBlank()) {
+                logger.debug("User token not available (executeAsCaller may not be enabled), skipping admin role check");
+            } else {
+                // All conditions met: perform admin role validation
+                // Requires: user token, admin groups, and compute warehouse
+                logger.debug("User token available, checking admin roles for {} admin groups using warehouse {}", adminGroups.size(), computeWarehouse);
                 Set<String> userAdminGroups = validateAdminRoles(spcsIngressUserToken);
                 logger.debug("User has {} admin roles out of {} configured", userAdminGroups.size(), adminGroups.size());
                 for (String adminGroup : userAdminGroups) {
@@ -90,10 +106,6 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
                     String roleName = adminGroup.startsWith("ROLE_") ? adminGroup : "ROLE_" + adminGroup;
                     authorities.add(new SimpleGrantedAuthority(roleName));
                 }
-            } else if (adminGroups.isEmpty()) {
-                logger.debug("No admin groups configured, skipping admin role check");
-            } else {
-                logger.debug("User token not available (executeAsCaller may not be enabled), skipping admin role check");
             }
             
             return new SpcsAuthenticationToken(
@@ -135,77 +147,19 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
             ApiClient apiClient = new ApiClient();
             apiClient.setBasePath(accountUrl);
             
-            // DEBUG: Decode and log token (temporary debug logging)
-            try {
-                // Try to decode as JWT (three parts separated by dots)
-                String[] jwtParts = userToken.split("\\.");
-                if (jwtParts.length == 3) {
-                    // JWT token - decode header and payload
-                    logger.debug("Token is JWT format ({} parts)", jwtParts.length);
-                    
-                    // Decode header (part 0)
-                    try {
-                        String headerPart = jwtParts[0];
-                        String base64Header = headerPart.replace('-', '+').replace('_', '/');
-                        switch (base64Header.length() % 4) {
-                            case 2: base64Header += "=="; break;
-                            case 3: base64Header += "="; break;
-                        }
-                        byte[] decodedHeader = Base64.getDecoder().decode(base64Header);
-                        String headerStr = new String(decodedHeader, StandardCharsets.UTF_8);
-                        logger.debug("JWT header: {}", headerStr);
-                    } catch (Exception e) {
-                        logger.debug("Could not decode JWT header: {}", e.getMessage());
-                    }
-                    
-                    // Decode payload (part 1) and extract "aud" claim
-                    try {
-                        String payloadPart = jwtParts[1];
-                        String base64Payload = payloadPart.replace('-', '+').replace('_', '/');
-                        switch (base64Payload.length() % 4) {
-                            case 2: base64Payload += "=="; break;
-                            case 3: base64Payload += "="; break;
-                        }
-                        byte[] decodedPayload = Base64.getDecoder().decode(base64Payload);
-                        String payloadStr = new String(decodedPayload, StandardCharsets.UTF_8);
-                        logger.debug("JWT payload: {}", payloadStr);
-                        
-                        // Extract "aud" claim from JSON payload (simple string search for "aud":)
-                        // This is a simple approach - for production, use a proper JSON parser
-                        int audStart = payloadStr.indexOf("\"aud\":");
-                        if (audStart >= 0) {
-                            int audValueStart = payloadStr.indexOf("\"", audStart + 6) + 1;
-                            int audValueEnd = payloadStr.indexOf("\"", audValueStart);
-                            if (audValueEnd > audValueStart) {
-                                String audValue = payloadStr.substring(audValueStart, audValueEnd);
-                                logger.warn("JWT token 'aud' (audience) claim: '{}' | Account URL used for API: '{}' | Match: {}", 
-                                    audValue, accountUrl, audValue.equals(accountUrl) || accountUrl.contains(audValue) || audValue.contains(accountUrl));
-                                
-                                // If audience doesn't match account URL, this could cause "Invalid OAuth access token" error
-                                if (!audValue.equals(accountUrl) && !accountUrl.contains(audValue) && !audValue.contains(accountUrl)) {
-                                    logger.warn("WARNING: JWT audience '{}' does not match account URL '{}' - this may cause token rejection", audValue, accountUrl);
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        logger.debug("Could not decode JWT payload or extract 'aud' claim: {}", e.getMessage());
-                    }
-                } else {
-                    // Not a JWT, try direct base64 decode
-                    try {
-                        byte[] decoded = Base64.getDecoder().decode(userToken);
-                        String decodedStr = new String(decoded, StandardCharsets.UTF_8);
-                        logger.debug("Token decoded (not JWT, {} chars): {}", decodedStr.length(), decodedStr);
-                    } catch (Exception e) {
-                        logger.debug("Token is not base64 encoded: {}", e.getMessage());
-                    }
-                }
-            } catch (Exception e) {
-                logger.debug("Error decoding token for debugging: {}", e.getMessage());
+            HttpBearerAuth bearerAuth = (HttpBearerAuth) apiClient.getAuthentication("KeyPair");
+            
+            // SPCS authentication requires combined token format: <service-oauth-token>.<Sf-Context-Current-User-Token>
+            // Read service OAuth token from file and combine with user token
+            String serviceToken = readSpcsSessionTokenFromFile();
+            if (serviceToken == null || serviceToken.isEmpty()) {
+                logger.warn("Service OAuth token not available from file for admin role validation");
+                return userAdminGroups;
             }
             
-            HttpBearerAuth bearerAuth = (HttpBearerAuth) apiClient.getAuthentication("KeyPair");
-            bearerAuth.setBearerToken(userToken);
+            // Format: <service-oauth-token>.<Sf-Context-Current-User-Token>
+            String combinedToken = serviceToken + "." + userToken;           
+            bearerAuth.setBearerToken(combinedToken);
             
             // using SQL statement endpoint.  there maybe a REST API for this in the future.
             StatementsApi statementsApi = new StatementsApi(apiClient);
@@ -223,13 +177,14 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
             }
             String sql = sqlBuilder.toString();
             
+            // Prepare request outside try so it is available in catch/retry
+            SubmitStatementRequest request = new SubmitStatementRequest();
+            request.setStatement(sql);
+            // Set warehouse for SQL execution
+            request.setWarehouse(computeWarehouse.toUpperCase());
+            
             try {
-                SubmitStatementRequest request = new SubmitStatementRequest();
-                request.setStatement(sql);
                 
-                // Set xSnowflakeAuthorizationTokenType for debugging: indicates source of bearer token
-                // Using "OAUTH" since the user token (Sf-Context-Current-User-Token) is an OAuth token
-                logger.debug("Checking admin roles using user token (token length: {})", userToken != null ? userToken.length() : 0);
                 ResultSet result = statementsApi.submitStatement(
                     USER_AGENT,
                     request,
@@ -260,18 +215,40 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
                     }
                 }
             } catch (ApiException e) {
-                // Log full error details for debugging
-                logger.warn("Failed to check admin roles (user will not have admin privileges): status={}, code={}, message={}", 
-                    e.getCode(), e.getCode(), e.getMessage());
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Full API exception details:", e);
-                }
+                // Log error details: exception includes message and stack trace
+                logger.warn("Failed to check admin roles (user will not have admin privileges): code={}", 
+                    e.getCode(), e);
+                // Return empty admin groups on failure (no fallback)
+                return userAdminGroups;
             }
         } catch (Exception e) {
             logger.error("Error validating admin roles: {}", e.getMessage(), e);
+            // Return empty admin groups on exception (no fallback)
+            return userAdminGroups;
         }
         
         return userAdminGroups;
+    }
+    
+    /**
+     * Reads the SPCS session token from the standard file location if available.
+     * @return The token string or null if not available.
+     */
+    private String readSpcsSessionTokenFromFile() {
+        try {
+            Path tokenPath = Paths.get("/snowflake/session/token");
+            if (Files.exists(tokenPath) && Files.isRegularFile(tokenPath)) {
+                String token = Files.readString(tokenPath).trim();
+                if (!token.isEmpty()) {
+                    return token;
+                } else {
+                    logger.warn("SPCS session token file exists but is empty: {}", tokenPath);
+                }
+            }
+        } catch (Exception ex) {
+            logger.warn("Error reading SPCS session token from file: {}", ex.getMessage());
+        }
+        return null;
     }
     
     /**
