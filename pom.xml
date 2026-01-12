@@ -13,7 +13,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.11</version>
+        <version>3.4.13</version>
         <relativePath/>
     </parent>
 
@@ -23,7 +23,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <!-- Dependency versions -->
-        <spring-boot.version>3.4.11</spring-boot.version>
+        <spring-boot.version>3.4.13</spring-boot.version>
         <aws-java-sdk.version>2.31.21</aws-java-sdk.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <commons-io.version>2.19.0</commons-io.version>
