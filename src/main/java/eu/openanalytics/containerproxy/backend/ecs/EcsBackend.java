@@ -131,9 +131,6 @@ public class EcsBackend extends AbstractContainerBackend {
         if (region == null) {
             throw new IllegalStateException("Error in configuration of ECS backend: proxy.ecs.region not set");
         }
-        try (StsClient stsClient = StsClient.create()) {
-            accountId = stsClient.getCallerIdentity().account();
-        }
 
         ecsClient = EcsClient.builder()
             .region(Region.of(region))
@@ -186,6 +183,10 @@ public class EcsBackend extends AbstractContainerBackend {
             if (containerSpec.getDns().isOriginalValuePresent()) {
                 throw new IllegalStateException(String.format("Error in configuration of specs: spec with id '%s' has 'dns' configured, this is not supported by ECS fargate", spec.getId()));
             }
+        }
+
+        try (StsClient stsClient = StsClient.create()) {
+            accountId = stsClient.getCallerIdentity().account();
         }
     }
 
