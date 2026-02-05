@@ -22,27 +22,33 @@ package eu.openanalytics.containerproxy.backend.spcs;
 
 import eu.openanalytics.containerproxy.backend.spcs.client.ApiClient;
 import eu.openanalytics.containerproxy.backend.spcs.client.ApiException;
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
 import eu.openanalytics.containerproxy.backend.spcs.client.auth.HttpBearerAuth;
 import eu.openanalytics.containerproxy.backend.spcs.client.api.ServiceApi;
+import eu.openanalytics.containerproxy.backend.spcs.client.api.StatementsApi;
 import eu.openanalytics.containerproxy.backend.spcs.client.model.Service;
+import eu.openanalytics.containerproxy.backend.spcs.client.model.SubmitStatementRequest;
 import eu.openanalytics.containerproxy.backend.spcs.client.model.ServiceContainer;
 import eu.openanalytics.containerproxy.backend.spcs.client.model.ServiceEndpoint;
 import eu.openanalytics.containerproxy.backend.spcs.client.model.ServiceSpec;
 import eu.openanalytics.containerproxy.backend.spcs.client.model.ServiceSpecInlineText;
-import com.google.gson.reflect.TypeToken;
+import com.fasterxml.jackson.core.type.TypeReference;
 import eu.openanalytics.containerproxy.ContainerFailedToStartException;
+import eu.openanalytics.containerproxy.ContainerProxyException;
+import eu.openanalytics.containerproxy.ProxyFailedToStartException;
 import eu.openanalytics.containerproxy.backend.AbstractContainerBackend;
 import eu.openanalytics.containerproxy.event.NewProxyEvent;
 import eu.openanalytics.containerproxy.model.runtime.Container;
 import eu.openanalytics.containerproxy.model.runtime.ExistingContainerInfo;
 import eu.openanalytics.containerproxy.model.runtime.PortMappings;
 import eu.openanalytics.containerproxy.model.runtime.Proxy;
+import eu.openanalytics.containerproxy.model.runtime.ProxyStatus;
 import eu.openanalytics.containerproxy.model.runtime.ProxyStartupLog;
 import eu.openanalytics.containerproxy.model.runtime.runtimevalues.BackendContainerName;
 import eu.openanalytics.containerproxy.model.runtime.runtimevalues.BackendContainerNameKey;
 import eu.openanalytics.containerproxy.model.runtime.runtimevalues.ContainerImageKey;
+import eu.openanalytics.containerproxy.model.runtime.runtimevalues.ContainerIndexKey;
 import eu.openanalytics.containerproxy.model.runtime.runtimevalues.HttpHeaders;
+import eu.openanalytics.containerproxy.model.runtime.runtimevalues.PortMappingsKey;
 import eu.openanalytics.containerproxy.model.runtime.runtimevalues.HttpHeadersKey;
 import eu.openanalytics.containerproxy.model.runtime.runtimevalues.InstanceIdKey;
 import eu.openanalytics.containerproxy.model.runtime.runtimevalues.ProxyIdKey;
@@ -55,7 +61,6 @@ import eu.openanalytics.containerproxy.model.runtime.runtimevalues.RuntimeValueK
 import eu.openanalytics.containerproxy.model.spec.ContainerSpec;
 import eu.openanalytics.containerproxy.model.spec.ProxySpec;
 import eu.openanalytics.containerproxy.spec.IProxySpecProvider;
-import eu.openanalytics.containerproxy.util.EnvironmentUtils;
 import eu.openanalytics.containerproxy.util.Retrying;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.Authentication;
@@ -69,36 +74,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.MessageDigest;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 @Component
 @ConditionalOnProperty(name = "proxy.container-backend", havingValue = "spcs")
@@ -112,21 +97,31 @@ public class SpcsBackend extends AbstractContainerBackend {
     private static final String PROPERTY_DATABASE = "database";
     private static final String PROPERTY_SCHEMA = "schema";
     private static final String PROPERTY_COMPUTE_POOL = "compute-pool";
-    private static final String PROPERTY_EXTERNAL_ACCESS_INTEGRATIONS = "external-access-integrations";
     private static final String PROPERTY_SERVICE_WAIT_TIME = "service-wait-time";
 
     private ServiceApi snowflakeServiceAPI;
+    private StatementsApi snowflakeStatementsAPI;
     private ApiClient snowflakeAPIClient;
+    private String snowflakeTokenType; // Token type for API calls (KEYPAIR_JWT, OAUTH, or PROGRAMMATIC_ACCESS_TOKEN)
     private int serviceWaitTime;
+    
+    // YAML mapper for service spec serialization/deserialization
+    private final ObjectMapper yamlMapper = new ObjectMapper(YAMLFactory.builder()
+        .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
+        .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
+        .build());
+    
+    // JSON mapper for comment metadata serialization/deserialization
+    private final ObjectMapper jsonMapper = new ObjectMapper();
+    
     private String database;
     private String schema;
     private String computePool;
-    private List<String> externalAccessIntegrations;
     private String accountUrl;
     private String accountIdentifier; // Account identifier (e.g., "ORG-ACCOUNT" or "ACCOUNT") - stored separately from URL
     private String username;
     private AuthMethod authMethod;
-    private String privateRsaKeyPath; // For keypair authentication - path to RSA private key
+    private SpcsKeypairAuth keypairAuth; // For keypair authentication
     private Supplier<String> jwtTokenSupplier; // Supplier to generate/regenerate JWT tokens for keypair auth
 
     private static final Path SPCS_SESSION_TOKEN_PATH = Paths.get("/snowflake/session/token");
@@ -139,8 +134,7 @@ public class SpcsBackend extends AbstractContainerBackend {
 
     @Inject
     private IProxySpecProvider proxySpecProvider;
-
-
+    
     @Override
     @PostConstruct
     public void initialize() {
@@ -162,26 +156,48 @@ public class SpcsBackend extends AbstractContainerBackend {
 
         initializeSnowflakeAPIClient();
 
-        // Validate specs
+        // Validate specs (log warnings only - actual validation happens when starting proxy)
         for (ProxySpec spec : proxySpecProvider.getSpecs()) {
             ContainerSpec containerSpec = spec.getContainerSpecs().get(0);
+            if (!containerSpec.getImage().isOriginalValuePresent()) {
+                log.warn("Spec with id '{}' has no 'container-image' configured, this is required for running on Snowflake SPCS. Proxy will fail to start if this field is missing.", spec.getId());
+            }
             if (!containerSpec.getMemoryRequest().isOriginalValuePresent()) {
-                throw new IllegalStateException(String.format("Error in configuration of specs: spec with id '%s' has no 'memory-request' configured, this is required for running on Snowflake SPCS", spec.getId()));
+                log.warn("Spec with id '{}' has no 'container-memory-request' configured, this is required for running on Snowflake SPCS. Proxy will fail to start if this field is missing.", spec.getId());
             }
             if (!containerSpec.getCpuRequest().isOriginalValuePresent()) {
-                throw new IllegalStateException(String.format("Error in configuration of specs: spec with id '%s' has no 'cpu-request' configured, this is required for running on Snowflake SPCS", spec.getId()));
+                log.warn("Spec with id '{}' has no 'container-cpu-request' configured, this is required for running on Snowflake SPCS. Proxy will fail to start if this field is missing.", spec.getId());
             }
             if (containerSpec.getMemoryLimit().isOriginalValuePresent()) {
-                throw new IllegalStateException(String.format("Error in configuration of specs: spec with id '%s' has 'memory-limit' configured, this is not supported by Snowflake SPCS", spec.getId()));
+                log.warn("Spec with id '{}' has 'memory-limit' configured, this is not supported by Snowflake SPCS and will be ignored.", spec.getId());
             }
             if (containerSpec.getCpuLimit().isOriginalValuePresent()) {
-                throw new IllegalStateException(String.format("Error in configuration of specs: spec with id '%s' has 'cpu-limit' configured, this is not supported by Snowflake SPCS", spec.getId()));
+                log.warn("Spec with id '{}' has 'cpu-limit' configured, this is not supported by Snowflake SPCS and will be ignored.", spec.getId());
             }
             if (containerSpec.isPrivileged()) {
-                throw new IllegalStateException(String.format("Error in configuration of specs: spec with id '%s' has 'privileged: true' configured, this is not supported by Snowflake SPCS", spec.getId()));
+                log.warn("Spec with id '{}' has 'privileged: true' configured, this is not supported by Snowflake SPCS and will be ignored.", spec.getId());
             }
-            if (containerSpec.getVolumes().isOriginalValuePresent() && !containerSpec.getVolumes().getOriginalValue().isEmpty()) {
-                throw new IllegalStateException(String.format("Error in configuration of specs: spec with id '%s' has 'volumes' configured, this is not yet supported by Snowflake SPCS", spec.getId()));
+            
+            // Validate that volume mounts reference volumes defined in spec's spcs.volumes
+            SpcsSpecExtension specExtension = spec.getSpecExtension(SpcsSpecExtension.class);
+            if (specExtension != null && containerSpec.getVolumes().isOriginalValuePresent() && containerSpec.getVolumes().getOriginalValue() != null && !containerSpec.getVolumes().getOriginalValue().isEmpty()) {
+                java.util.Set<String> definedVolumeNames = new java.util.HashSet<>();
+                if (specExtension.getSpcsVolumes() != null) {
+                    for (SpcsVolume volume : specExtension.getSpcsVolumes()) {
+                        if (volume != null && volume.getName() != null) {
+                            definedVolumeNames.add(volume.getName());
+                        }
+                    }
+                }
+                for (String volumeMountString : containerSpec.getVolumes().getOriginalValue()) {
+                    int colonIndex = volumeMountString.indexOf(':');
+                    if (colonIndex > 0) {
+                        String volumeName = volumeMountString.substring(0, colonIndex).trim();
+                        if (!volumeName.isEmpty() && !definedVolumeNames.contains(volumeName)) {
+                            throw new IllegalStateException(String.format("Error in configuration of specs: spec with id '%s' references volume '%s' in container-volumes which is not defined in spec's spcs.volumes", spec.getId(), volumeName));
+                        }
+                    }
+                }
             }
         }
     }
@@ -257,12 +273,6 @@ public class SpcsBackend extends AbstractContainerBackend {
             log.info("Using compute pool from configuration: {} (SNOWFLAKE_COMPUTE_POOL was: {})", computePool, snowflakeComputePool);
         }
         
-        // Load external access integrations (optional, can be null)
-        externalAccessIntegrations = EnvironmentUtils.readList(environment, PROPERTY_PREFIX + PROPERTY_EXTERNAL_ACCESS_INTEGRATIONS);
-        if (externalAccessIntegrations != null && !externalAccessIntegrations.isEmpty()) {
-            log.info("Using external access integrations from configuration: {}", externalAccessIntegrations);
-        }
-        
         log.info("Loaded SPCS environment: account={}, region={}, compute-pool={}", 
             snowflakeAccount, snowflakeRegion, computePool);
     }
@@ -307,12 +317,6 @@ public class SpcsBackend extends AbstractContainerBackend {
         computePool = getProperty(PROPERTY_COMPUTE_POOL);
         if (computePool == null) {
             throw new IllegalStateException("Error in configuration of SPCS backend: proxy.spcs.compute-pool not set");
-        }
-        
-        // Load external access integrations (optional, can be null)
-        externalAccessIntegrations = EnvironmentUtils.readList(environment, PROPERTY_PREFIX + PROPERTY_EXTERNAL_ACCESS_INTEGRATIONS);
-        if (externalAccessIntegrations != null && !externalAccessIntegrations.isEmpty()) {
-            log.info("Using external access integrations from configuration: {}", externalAccessIntegrations);
         }
     }
 
@@ -362,20 +366,20 @@ public class SpcsBackend extends AbstractContainerBackend {
             
             // Set X-Snowflake-Authorization-Token-Type header
             // This helps snowflake identify the token type and useful in logs for debugging
-            String tokenType;
             if (authMethod == AuthMethod.KEYPAIR) {
-                tokenType = "KEYPAIR_JWT";  // Key-pair JWT token
+                snowflakeTokenType = "KEYPAIR_JWT";  // Key-pair JWT token
             } else if (authMethod == AuthMethod.SPCS_SESSION_TOKEN) {
-                tokenType = "OAUTH";  // OAuth token from SPCS session
+                snowflakeTokenType = "OAUTH";  // OAuth token from SPCS session
             } else if (authMethod == AuthMethod.PAT) {
-                tokenType = "PROGRAMMATIC_ACCESS_TOKEN";  // Programmatic access token
+                snowflakeTokenType = "PROGRAMMATIC_ACCESS_TOKEN";  // Programmatic access token
             } else {
                 throw new IllegalStateException("Unknown authentication method: " + authMethod);
             }
-            snowflakeAPIClient.addDefaultHeader("X-Snowflake-Authorization-Token-Type", tokenType);
+            snowflakeAPIClient.addDefaultHeader("X-Snowflake-Authorization-Token-Type", snowflakeTokenType);
 
             snowflakeServiceAPI = new ServiceApi(snowflakeAPIClient);
-            log.info("Initialized Snowflake SPCS backend with account URL: {} using authentication type: {}", accountUrl, tokenType);
+            snowflakeStatementsAPI = new StatementsApi(snowflakeAPIClient);
+            log.info("Initialized Snowflake SPCS backend with account URL: {} using authentication type: {}", accountUrl, snowflakeTokenType);
         } catch (Exception e) {
             throw new IllegalStateException("Error initializing Snowflake API client: " + e.getMessage(), e);
         }
@@ -396,11 +400,11 @@ public class SpcsBackend extends AbstractContainerBackend {
         
         if (privateRsaKeyPath != null && Files.exists(Paths.get(privateRsaKeyPath))) {
             // Priority 2: Keypair authentication
-            this.privateRsaKeyPath = privateRsaKeyPath;
+            keypairAuth = new SpcsKeypairAuth(accountIdentifier, username, accountUrl, privateRsaKeyPath);
             authMethod = AuthMethod.KEYPAIR;
             // JWT token will be generated on-demand via supplier
             // This allows automatic regeneration when the token expires
-            jwtTokenSupplier = () -> generateJwtTokenForKeypair();
+            jwtTokenSupplier = () -> keypairAuth.generateJwtToken();
             // For REST API, we'll use the supplier to get fresh JWT tokens
             // For ingress, JWT needs to be exchanged for Snowflake Token (handled separately)
             log.info("Using keypair authentication for user: {} with RSA key: {}", username, privateRsaKeyPath);
@@ -416,146 +420,93 @@ public class SpcsBackend extends AbstractContainerBackend {
         }
     }
 
-    
+    /**
+     * Creates one SPCS service with one container per proxy.
+     * ShinyProxy uses one container per spec; no multi-container or shared services.
+     */
     @Override
     public Proxy startContainer(Authentication authentication, Container initialContainer, ContainerSpec spec, Proxy proxy, ProxySpec proxySpec, ProxyStartupLog.ProxyStartupLogBuilder proxyStartupLogBuilder) throws ContainerFailedToStartException {
         Container.ContainerBuilder rContainerBuilder = initialContainer.toBuilder();
-        String containerId = UUID.randomUUID().toString();
-        rContainerBuilder.id(containerId);
+        rContainerBuilder.id(UUID.randomUUID().toString());
 
         SpcsSpecExtension specExtension = proxySpec.getSpecExtension(SpcsSpecExtension.class);
+        String serviceName = generateServiceName(proxy);
+        String fullServiceName = database + "." + schema + "." + serviceName;
+        String containerName = generateContainerName(proxy.getId(), 0);
+
         try {
-            // Build environment variables
+            proxyStartupLogBuilder.startingContainer(0);
+
+            // Build and create service (one container)
             Map<String, String> env = buildEnv(authentication, spec, proxy);
+            String serviceSpecYaml = buildServiceSpecYaml(spec, env, specExtension, proxy, serviceName, containerName, authentication);
 
-            // Generate service name (must be unique and valid Snowflake identifier)
-            String serviceName = generateServiceName(proxy.getId(), initialContainer.getIndex());
-
-            // Build service YAML spec
-            String serviceSpecYaml = buildServiceSpecYaml(spec, env, specExtension, proxy, serviceName, authentication);
-
-            // Create service spec
             ServiceSpecInlineText serviceSpec = new ServiceSpecInlineText();
-            serviceSpec.setSpecType("from_inline"); // Set discriminator value for polymorphic type
+            serviceSpec.setSpecType("from_inline");
             serviceSpec.setSpecText(serviceSpecYaml);
 
-            // Create service
             Service service = new Service();
             service.setName(serviceName);
-            service.setComputePool(specExtension.getSpcsComputePool().getValueOrDefault(computePool));
+            service.setComputePool(specExtension != null ? specExtension.getSpcsComputePool().getValueOrDefault(computePool) : computePool);
             service.setSpec(serviceSpec);
-
-            // Set external access integrations: use spec-level if specified, otherwise use global config
-            List<String> externalAccessIntegrations = specExtension.getSpcsExternalAccessIntegrations().getValueOrNull();
-            if (externalAccessIntegrations == null || externalAccessIntegrations.isEmpty()) {
-                externalAccessIntegrations = this.externalAccessIntegrations;
+            if (specExtension != null && specExtension.getSpcsExternalAccessIntegrations() != null && !specExtension.getSpcsExternalAccessIntegrations().isEmpty()) {
+                service.setExternalAccessIntegrations(specExtension.getSpcsExternalAccessIntegrations());
             }
-            if (externalAccessIntegrations != null && !externalAccessIntegrations.isEmpty()) {
-                service.setExternalAccessIntegrations(externalAccessIntegrations);
-            }
-
-            // Store runtime values in comment field for recovery (similar to Docker labels)
-            // This allows automatic parsing during recovery using parseCommentAsRuntimeValues()
-            // proxy-id and container-index are also included for convenience (they're also in service name)
-            // Note: Some values can't be stored here:
-            //   - image: stored in service spec (YAML), extracted during recovery
-            Map<String, String> commentMetadata = new HashMap<>();
-            
-            // Store all runtime values that should be included for recovery
-            Stream.concat(
-                proxy.getRuntimeValues().values().stream(),
-                initialContainer.getRuntimeValues().values().stream()
-            ).forEach(runtimeValue -> {
-                if (runtimeValue.getKey().getIncludeAsLabel() || runtimeValue.getKey().getIncludeAsAnnotation()) {
-                    commentMetadata.put(runtimeValue.getKey().getKeyAsLabel(), runtimeValue.toString());
-                }
-            });
-            
-            String comment = JSON.getGson().toJson(commentMetadata);
-            service.setComment(comment);
-
-            // Tell the status service we are starting the container
-            proxyStartupLogBuilder.startingContainer(initialContainer.getIndex());
-
-            // Create the service
-            String fullServiceName = database + "." + schema + "." + serviceName;
-            try {
-                snowflakeServiceAPI.createService(database, schema, service, "ifNotExists");
-                slog.info(proxy, String.format("Created Snowflake service: %s", fullServiceName));
-            } catch (ApiException e) {
-                if (e.getCode() != 409) { // 409 = conflict, which is OK if service exists
-                    throw new ContainerFailedToStartException("Failed to create Snowflake service: " + e.getMessage(), e, rContainerBuilder.build());
-                }
-            }
-
             rContainerBuilder.addRuntimeValue(new RuntimeValue(BackendContainerNameKey.inst, new BackendContainerName(fullServiceName)), false);
+            service.setComment(createCommentMetadata(proxy, rContainerBuilder.build()));
+
+            snowflakeServiceAPI.createService(database, schema, service, "ifNotExists");
+            slog.info(proxy, String.format("Created Snowflake service: %s", fullServiceName));
+
             applicationEventPublisher.publishEvent(new NewProxyEvent(proxy.toBuilder().updateContainer(rContainerBuilder.build()).build(), authentication));
 
-            // Wait for service to be ready (and endpoints if running external to SPCS)
+            // Wait for container and endpoints
             boolean needsEndpoints = !isRunningInsideSpcs() && spec.getPortMapping() != null && !spec.getPortMapping().isEmpty();
-            String waitMessage = needsEndpoints ? "SPCS Service and Endpoints" : "SPCS Service";
-            
+            String waitMessage = needsEndpoints ? "SPCS Container and Endpoints" : "SPCS Container";
+
             boolean serviceReady = Retrying.retry((currentAttempt, maxAttempts) -> {
                 try {
-                    // Check if service containers are running/ready
                     List<ServiceContainer> containers = snowflakeServiceAPI.listServiceContainers(database, schema, serviceName);
-                    boolean serviceRunning = false;
+                    boolean containerRunning = false;
                     if (containers != null && !containers.isEmpty()) {
-                        // Check if any container is running/ready
-                        for (ServiceContainer serviceContainer : containers) {
-                            String status = serviceContainer.getStatus();
-                            String serviceStatus = serviceContainer.getServiceStatus();
-                            if (status != null && (status.equals("RUNNING") || status.equals("UP") || status.equals("READY"))) {
-                                serviceRunning = true;
-                                break;
-                            }
-                            if (serviceStatus != null && (serviceStatus.equals("RUNNING") || serviceStatus.equals("UP") || serviceStatus.equals("READY"))) {
-                                serviceRunning = true;
-                                break;
-                            }
-                            if (status != null && (status.equals("FAILED") || status.equals("ERROR"))) {
-                                slog.warn(proxy, String.format("SPCS service container failed: status=%s, message=%s", status, serviceContainer.getMessage()));
-                                return new Retrying.Result(false, false);
+                        for (ServiceContainer sc : containers) {
+                            String scName = sc.getContainerName();
+                            if (scName != null && containerName.equalsIgnoreCase(scName)) {
+                                String status = sc.getStatus();
+                                String svcStatus = sc.getServiceStatus();
+                                if ((status != null && ("RUNNING".equals(status) || "UP".equals(status) || "READY".equals(status))) ||
+                                    (svcStatus != null && ("RUNNING".equals(svcStatus) || "UP".equals(svcStatus) || "READY".equals(svcStatus)))) {
+                                    containerRunning = true;
+                                    break;
+                                }
+                                if (status != null && ("FAILED".equals(status) || "ERROR".equals(status))) {
+                                    slog.warn(proxy, String.format("SPCS container %s failed: status=%s", containerName, status));
+                                    return new Retrying.Result(false, false);
+                                }
                             }
                         }
                     }
-                    
-                    // If service is not running yet, keep waiting
-                    if (!serviceRunning) {
-                        return Retrying.FAILURE;
-                    }
-                    
-                    // If running external to SPCS, also check endpoints are ready
+                    if (!containerRunning) return Retrying.FAILURE;
+
                     if (needsEndpoints) {
                         List<ServiceEndpoint> endpoints = snowflakeServiceAPI.showServiceEndpoints(database, schema, serviceName);
-                        if (endpoints == null || endpoints.isEmpty()) {
-                            return Retrying.FAILURE;
-                        }
-                        
-                        // Check if all expected endpoints have valid ingress URLs
-                        for (eu.openanalytics.containerproxy.model.spec.PortMapping portMapping : spec.getPortMapping()) {
-                            boolean foundValidEndpoint = false;
-                            for (ServiceEndpoint endpoint : endpoints) {
-                                if (endpoint.getPort() != null && endpoint.getPort().equals(portMapping.getPort()) &&
-                                    endpoint.getIsPublic() != null && endpoint.getIsPublic() &&
-                                    "HTTP".equalsIgnoreCase(endpoint.getProtocol())) {
-                                    String ingressUrl = endpoint.getIngressUrl();
-                                    if (ingressUrl != null && !ingressUrl.isEmpty() &&
-                                        !ingressUrl.toLowerCase().contains("provisioning") &&
-                                        !ingressUrl.toLowerCase().contains("progress") &&
-                                        (ingressUrl.contains("://") || ingressUrl.contains("."))) {
-                                        foundValidEndpoint = true;
+                        if (endpoints == null || endpoints.isEmpty()) return Retrying.FAILURE;
+                        for (eu.openanalytics.containerproxy.model.spec.PortMapping pm : spec.getPortMapping()) {
+                            boolean found = false;
+                            for (ServiceEndpoint ep : endpoints) {
+                                if (ep.getPort() != null && ep.getPort().equals(pm.getPort()) &&
+                                    Boolean.TRUE.equals(ep.getIsPublic()) && "HTTP".equalsIgnoreCase(ep.getProtocol())) {
+                                    String url = ep.getIngressUrl();
+                                    if (url != null && !url.isEmpty() && !url.toLowerCase().contains("provisioning") &&
+                                        !url.toLowerCase().contains("progress") && (url.contains("://") || url.contains("."))) {
+                                        found = true;
                                         break;
                                     }
                                 }
                             }
-                            if (!foundValidEndpoint) {
-                                return Retrying.FAILURE;
-                            }
+                            if (!found) return Retrying.FAILURE;
                         }
                     }
-                    
-                    // Both service and endpoints (if needed) are ready
                     return Retrying.SUCCESS;
                 } catch (ApiException e) {
                     slog.warn(proxy, String.format("Error checking service status: %s", e.getMessage()));
@@ -564,156 +515,577 @@ public class SpcsBackend extends AbstractContainerBackend {
             }, serviceWaitTime, waitMessage, 10, proxy, slog);
 
             if (!serviceReady) {
-                // Try to fetch and include logs in error message
                 String logInfo = fetchServiceLogsForError(database, schema, serviceName);
                 String errorMessage = "Service failed to start" + (needsEndpoints ? " or endpoints failed to provision" : "");
                 if (logInfo != null && !logInfo.isEmpty()) {
-                    // Log the container logs separately so they appear in the log output before service deletion
                     slog.warn(proxy, String.format("Container logs for failed service %s:\n%s", serviceName, logInfo));
                     errorMessage += ". Container logs: " + logInfo;
                 }
                 throw new ContainerFailedToStartException(errorMessage, null, rContainerBuilder.build());
             }
 
-            proxyStartupLogBuilder.containerStarted(initialContainer.getIndex());
+            proxyStartupLogBuilder.containerStarted(0);
 
-            // Get service image info (from service spec)
+            if (!spec.getImage().isPresent() || spec.getImage().getValue() == null || spec.getImage().getValue().isEmpty()) {
+                throw new ContainerFailedToStartException(String.format("Error starting proxy: spec with id '%s' has no 'container-image' configured", proxy.getSpecId()), null, rContainerBuilder.build());
+            }
             rContainerBuilder.addRuntimeValue(new RuntimeValue(ContainerImageKey.inst, spec.getImage().getValue()), false);
 
             Proxy.ProxyBuilder proxyBuilder = proxy.toBuilder();
             Map<Integer, Integer> portBindings = new HashMap<>();
             Container rContainer = rContainerBuilder.build();
-            Map<String, URI> targets = setupPortMappingExistingProxy(proxy, rContainer, portBindings);
+            Map<String, URI> targets;
+            try {
+                targets = setupPortMappingExistingProxy(proxy, rContainer, portBindings);
+            } catch (Exception e) {
+                throw new ContainerFailedToStartException("Failed to set up port mapping: " + e.getMessage(), e, rContainer);
+            }
             proxyBuilder.addTargets(targets);
-            
-            // when forwarding HTTP requests to SPCS we need to switch from "Bearer" authorization used on REST API to "Snowflake Token" authorization
-            // Extract endpoint URL from targets for keypair auth token exchange scope
-            // TODO: how do we refresh the short lived "Snowflake Token" after the proxy has been running for a while?
             String endpointUrl = extractEndpointUrlFromTargets(targets);
-            
             Map<String, String> headers = setupProxyContainerHTTPHeaders(proxy, endpointUrl, authentication);
             proxyBuilder.addRuntimeValue(new RuntimeValue(HttpHeadersKey.inst, new HttpHeaders(headers)), true);
             proxyBuilder.updateContainer(rContainer);
             return proxyBuilder.build();
-        } catch (ContainerFailedToStartException t) {
-            throw t;
-        } catch (InterruptedException interruptedException) {
-            Thread.currentThread().interrupt();
-            throw new ContainerFailedToStartException("SPCS container failed to start", interruptedException, rContainerBuilder.build());
-        } catch (Throwable throwable) {
-            throw new ContainerFailedToStartException("SPCS container failed to start", throwable, rContainerBuilder.build());
+        } catch (ContainerFailedToStartException e) {
+            throw e;
+        } catch (Throwable e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new ContainerFailedToStartException("SPCS container failed to start", e, rContainerBuilder.build());
         }
     }
 
-    private String generateServiceName(String proxyId, Integer containerIndex) {
-        // Snowflake service names must be valid identifiers (alphanumeric and underscore)
-        // Use uppercase to match Snowflake's behavior and avoid case sensitivity issues
-        // Pattern: SP_SERVICE__<proxyId_with_underscores>__<containerIndex>
-        // Use double underscores as separators for easier parsing
-        // Replace dashes (from UUID format) with single underscores for exact recovery
-        // Note: proxyId is expected to be a UUID (alphanumeric + hyphens only)
-        String normalizedProxyId = proxyId.toUpperCase().replace("-", "_");        
-        String serviceName = "SP_SERVICE__" + normalizedProxyId + "__" + containerIndex;
-        
-        // Ensure it doesn't exceed Snowflake identifier length of 255 chars
+    /**
+     * Builds service YAML spec for a single container.
+     */
+    private String buildServiceSpecYaml(ContainerSpec spec, Map<String, String> env, SpcsSpecExtension specExtension, Proxy proxy, String serviceName, String containerName, Authentication authentication) throws IOException {
+        Map<String, Object> serviceSpec = new HashMap<>();
+        Map<String, Object> specSection = new HashMap<>();
+
+        specSection.put("containers", java.util.Collections.singletonList(buildContainerMap(spec, env, containerName, specExtension)));
+
+        List<String> endpointNames = new ArrayList<>();
+        if (spec.getPortMapping() != null && !spec.getPortMapping().isEmpty()) {
+            List<Map<String, Object>> endpoints = new ArrayList<>();
+            for (eu.openanalytics.containerproxy.model.spec.PortMapping pm : spec.getPortMapping()) {
+                endpointNames.add(pm.getName());
+                Map<String, Object> ep = new HashMap<>();
+                ep.put("name", pm.getName());
+                ep.put("port", pm.getPort());
+                ep.put("protocol", "HTTP");
+                ep.put("public", !isRunningInsideSpcs());
+                endpoints.add(ep);
+            }
+            specSection.put("endpoints", endpoints);
+        }
+
+        if (specExtension != null && specExtension.getSpcsVolumes() != null && !specExtension.getSpcsVolumes().isEmpty()) {
+            List<Map<String, Object>> volumes = new ArrayList<>();
+            for (SpcsVolume vol : specExtension.getSpcsVolumes()) {
+                Map<String, Object> vm = buildVolumeMap(vol);
+                if (vm != null) volumes.add(vm);
+            }
+            if (!volumes.isEmpty()) specSection.put("volumes", volumes);
+        }
+
+        serviceSpec.put("spec", specSection);
+
+        boolean executeAsCaller = authentication instanceof SpcsAuthenticationToken &&
+            authentication.getCredentials() != null && !authentication.getCredentials().toString().isBlank();
+        Map<String, Object> capabilities = new HashMap<>();
+        Map<String, Object> securityContext = new HashMap<>();
+        securityContext.put("executeAsCaller", executeAsCaller);
+        capabilities.put("securityContext", securityContext);
+        serviceSpec.put("capabilities", capabilities);
+
+        if (!endpointNames.isEmpty()) {
+            Map<String, Object> role = new HashMap<>();
+            role.put("name", serviceName);
+            role.put("endpoints", endpointNames);
+            serviceSpec.put("serviceRoles", java.util.Collections.singletonList(role));
+        }
+
+        return yamlMapper.writeValueAsString(serviceSpec);
+    }
+
+    /**
+     * Creates comment metadata for recovery (single container).
+     */
+    private String createCommentMetadata(Proxy proxy, Container container) {
+        Map<String, Object> commentMetadata = new HashMap<>();
+        Map<String, Object> proxyEntry = new HashMap<>();
+        proxyEntry.put("proxyRuntimeValues", buildProxyRuntimeValues(proxy));
+        Map<String, Object> containersMap = new HashMap<>();
+        containersMap.put("0", buildContainerMetadata(container));
+        proxyEntry.put("containers", containersMap);
+        commentMetadata.put("proxies", java.util.Collections.singletonMap(proxy.getId(), proxyEntry));
+        try {
+            return jsonMapper.writeValueAsString(commentMetadata);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize comment metadata to JSON", e);
+        }
+    }
+
+    /**
+     * Generates a service name for SPCS.
+     * Format: SP_SERVICE__{proxyId}
+     * One service per proxy; services are not shared between proxies.
+     */
+    private String generateServiceName(Proxy proxy) {
+        String normalizedProxyId = normalizeServiceName(proxy.getId());
+        String serviceName = "SP_SERVICE__" + normalizedProxyId;
         if (serviceName.length() > 255) {
             serviceName = serviceName.substring(0, 255);
         }
         return serviceName;
     }
+    
+    /**
+     * Normalizes a name for use in Snowflake service names.
+     * Converts to uppercase and replaces invalid characters with underscores.
+     * 
+     * @param name The name to normalize
+     * @return Normalized name
+     */
+    private String normalizeServiceName(String name) {
+        if (name == null) {
+            return "";
+        }
+        // Convert to uppercase and replace invalid chars (non-alphanumeric, not underscore) with underscores
+        // Also replace hyphens with underscores for consistency
+        return name.toUpperCase().replace("-", "_").replaceAll("[^A-Z0-9_]", "_");
+    }
 
-    private String buildServiceSpecYaml(ContainerSpec spec, Map<String, String> env, SpcsSpecExtension specExtension, Proxy proxy, String serviceName, Authentication authentication) {
-        StringBuilder yaml = new StringBuilder();
-        yaml.append("spec:\n");
-        yaml.append("  containers:\n");
-        yaml.append("  - name: ").append(quoteYamlValue(spec.getResourceName().getValueOrDefault("container"))).append("\n");
+    /**
+     * Normalizes a proxyId for use in container names.
+     * Container names follow DNS-1123 subdomain rules:
+     * - Lowercase alphanumeric characters and hyphens only
+     * - Must start and end with alphanumeric character (handled by "sp--" prefix)
+     * - No underscores (replaced with dashes)
+     * - Other special characters are removed
+     * 
+     * @param proxyId The proxy ID to normalize (user-configurable, may contain special characters)
+     * @return Normalized proxyId suitable for container names
+     */
+    private String normalizeContainerName(String proxyId) {
+        if (proxyId == null) {
+            return "";
+        }
+        // Convert to lowercase, replace underscores with dashes, then remove any remaining non-alphanumeric/dash characters
+        return proxyId.toLowerCase()
+            .replace("_", "-")
+            .replaceAll("[^a-z0-9-]", "");
+    }
+
+    /**
+     * Generates a container name for use in SPCS service YAML.
+     * Format: sp--{proxyId}--{containerIndex}
+     * Requirements:
+     * - Must start with alpha character (starts with "sp")
+     * - Lowercase, no underscores (SPCS doesn't support underscores in container names)
+     * - Maximum 63 characters
+     * - Uses double dashes as separators
+     * 
+     * @param proxyId The proxy ID (user-configurable, may contain special characters)
+     * @param containerIndex The container index (0-based)
+     * @return Container name in format sp--{proxyId}--{containerIndex}
+     */
+    private String generateContainerName(String proxyId, Integer containerIndex) {
+        // Normalize proxyId: sanitize for container name restrictions
+        String normalizedProxyId = normalizeContainerName(proxyId);
+        // Format: sp--{proxyId}--{containerIndex}
+        return "sp--" + normalizedProxyId + "--" + containerIndex;
+    }
+
+    /**
+     * Builds container-specific metadata including portMappings and runtime values.
+     * Note: containerId is not stored as it's a random UUID that can be regenerated during recovery.
+     * 
+     * @param initialContainer The container to extract metadata from
+     * @return Map containing container metadata
+     */
+    private Map<String, Object> buildContainerMetadata(Container initialContainer) {
+        Map<String, Object> containerMetadata = new HashMap<>();
+        
+        // Store container-specific runtime values
+        Map<String, String> containerRuntimeValues = new HashMap<>();
+        initialContainer.getRuntimeValues().values().stream()
+            .filter(runtimeValue -> runtimeValue.getKey().isContainerSpecific())
+            .forEach(runtimeValue -> {
+                if (runtimeValue.getKey().getIncludeAsLabel() || runtimeValue.getKey().getIncludeAsAnnotation()) {
+                    containerRuntimeValues.put(runtimeValue.getKey().getKeyAsLabel(), runtimeValue.toString());
+                }
+            });
+        containerMetadata.put("runtimeValues", containerRuntimeValues);
+        
+        // Store PortMappingsKey (container-specific)
+        RuntimeValue portMappingsValue = initialContainer.getRuntimeValues().get(PortMappingsKey.inst);
+        if (portMappingsValue != null) {
+            String portMappingsJson = portMappingsValue.getKey().serializeToString(portMappingsValue.getObject());
+            containerMetadata.put("portMappings", portMappingsJson);
+        }
+        
+        return containerMetadata;
+    }
+
+    /**
+     * Builds proxy-level runtime values map.
+     * 
+     * @param proxy The proxy to extract runtime values from
+     * @return Map containing proxy-level runtime values
+     */
+    private Map<String, String> buildProxyRuntimeValues(Proxy proxy) {
+        Map<String, String> proxyRuntimeValues = new HashMap<>();
+        proxy.getRuntimeValues().values().stream()
+            .filter(runtimeValue -> !runtimeValue.getKey().isContainerSpecific())
+            .forEach(runtimeValue -> {
+                if (runtimeValue.getKey().getIncludeAsLabel() || runtimeValue.getKey().getIncludeAsAnnotation()) {
+                    proxyRuntimeValues.put(runtimeValue.getKey().getKeyAsLabel(), runtimeValue.toString());
+                }
+            });
+        return proxyRuntimeValues;
+    }
+
+    /**
+     * Builds a container map structure for YAML serialization.
+     * @param spec The container spec
+     * @param env Environment variables map
+     * @param containerName The name for this container (sp--{proxyId}--{containerIndex} format)
+     * @param specExtension The SPCS spec extension (contains secrets configuration)
+     * @return Map representing the container structure
+     */
+    private Map<String, Object> buildContainerMap(ContainerSpec spec, Map<String, String> env, String containerName, SpcsSpecExtension specExtension) {
+        Map<String, Object> container = new HashMap<>();
+        container.put("name", containerName);
         
         // Image from Snowflake image repository
-        // Format should be: /<database>/<schema>/<repository>/<image>:<tag>
-        // If image contains snowflakecomputing.com domain, remove it and convert to the correct format
+        if (!spec.getImage().isPresent() || spec.getImage().getValue() == null || spec.getImage().getValue().isEmpty()) {
+            throw new IllegalStateException("Error building container spec: 'container-image' is required but not specified. Please configure 'container-image' in your proxy spec.");
+        }
         String image = spec.getImage().getValue();
         image = formatSnowflakeImageName(image);
-        yaml.append("    image: ").append(quoteYamlValue(image)).append("\n");
+        container.put("image", image);
         
         // Command
         if (spec.getCmd().isPresent() && !spec.getCmd().getValue().isEmpty()) {
-            yaml.append("    command:\n");
-            for (String cmd : spec.getCmd().getValue()) {
-                yaml.append("    - ").append(quoteYamlValue(cmd)).append("\n");
-            }
+            container.put("command", spec.getCmd().getValue());
         }
         
         // Environment variables (must be a map, not a list)
         if (!env.isEmpty()) {
-            yaml.append("    env:\n");
-            for (Map.Entry<String, String> entry : env.entrySet()) {
-                yaml.append("      ").append(quoteYamlValue(entry.getKey())).append(": ").append(quoteYamlValue(entry.getValue())).append("\n");
-            }
+            container.put("env", new HashMap<>(env));
         }
         
-        // Resources (memory and CPU)
-        yaml.append("    resources:\n");
+        // Resources (memory and CPU - requests and limits)
+        Map<String, Object> resources = new HashMap<>();
+        
+        // Build requests map
+        Map<String, Object> requests = new HashMap<>();
         boolean hasRequests = false;
         if (spec.getMemoryRequest().isPresent()) {
-            yaml.append("      requests:\n");
-            hasRequests = true;
             String memoryValue = formatMemoryValue(spec.getMemoryRequest().getValue());
-            yaml.append("        memory: ").append(memoryValue).append("\n");
+            requests.put("memory", memoryValue);
+            hasRequests = true;
         }
         if (spec.getCpuRequest().isPresent()) {
-            if (!hasRequests) {
-                yaml.append("      requests:\n");
-            }
             String cpuValue = formatCpuValue(spec.getCpuRequest().getValue());
-            yaml.append("        cpu: ").append(cpuValue).append("\n");
+            requests.put("cpu", cpuValue);
+            hasRequests = true;
+        }
+        if (hasRequests) {
+            resources.put("requests", requests);
         }
         
-        // Ports/endpoints (at containers level)
-        // Endpoints are always needed (even when running inside SPCS) for internal DNS to be available
-        List<String> endpointNames = new ArrayList<>();
-        if (spec.getPortMapping() != null && !spec.getPortMapping().isEmpty()) {
-            yaml.append("  endpoints:\n");
-            for (eu.openanalytics.containerproxy.model.spec.PortMapping portMapping : spec.getPortMapping()) {
-                String endpointName = portMapping.getName();
-                endpointNames.add(endpointName);
-                yaml.append("  - name: ").append(quoteYamlValue(endpointName)).append("\n");
-                yaml.append("    port: ").append(portMapping.getPort()).append("\n");
-                yaml.append("    protocol: HTTP\n"); // Public endpoints only support HTTP
-                // Set public access: true when running external to SPCS, false when running inside SPCS (internal DNS is used)
-                yaml.append("    public: ").append(!isRunningInsideSpcs()).append("\n");
+        // Build limits map
+        Map<String, Object> limits = new HashMap<>();
+        boolean hasLimits = false;
+        if (spec.getMemoryLimit().isPresent()) {
+            String memoryValue = formatMemoryValue(spec.getMemoryLimit().getValue());
+            limits.put("memory", memoryValue);
+            hasLimits = true;
+        }
+        if (spec.getCpuLimit().isPresent()) {
+            String cpuValue = formatCpuValue(spec.getCpuLimit().getValue());
+            limits.put("cpu", cpuValue);
+            hasLimits = true;
+        }
+        if (hasLimits) {
+            resources.put("limits", limits);
+        }
+        
+        // Only add resources if we have at least requests or limits
+        if (!resources.isEmpty()) {
+            container.put("resources", resources);
+        }
+        
+        // Secrets (optional list)
+        if (specExtension != null && specExtension.getSpcsSecrets() != null && !specExtension.getSpcsSecrets().isEmpty()) {
+            List<Map<String, Object>> secrets = new ArrayList<>();
+            for (SpcsSecret secret : specExtension.getSpcsSecrets()) {
+                Map<String, Object> secretMap = new HashMap<>();
+                
+                // Build snowflakeSecret object (objectName OR objectReference)
+                Map<String, Object> snowflakeSecret = new HashMap<>();
+                if (secret.getObjectName() != null && !secret.getObjectName().isEmpty()) {
+                    snowflakeSecret.put("objectName", secret.getObjectName());
+                } else if (secret.getObjectReference() != null && !secret.getObjectReference().isEmpty()) {
+                    snowflakeSecret.put("objectReference", secret.getObjectReference());
+                } else {
+                    // Skip this secret if neither objectName nor objectReference is specified
+                    continue;
+                }
+                secretMap.put("snowflakeSecret", snowflakeSecret);
+                
+                // Add directoryPath OR envVarName (mutually exclusive)
+                if (secret.getDirectoryPath() != null && !secret.getDirectoryPath().isEmpty()) {
+                    secretMap.put("directoryPath", secret.getDirectoryPath());
+                } else if (secret.getEnvVarName() != null && !secret.getEnvVarName().isEmpty()) {
+                    secretMap.put("envVarName", secret.getEnvVarName());
+                    // secretKeyRef is required when using envVarName
+                    if (secret.getSecretKeyRef() != null && !secret.getSecretKeyRef().isEmpty()) {
+                        secretMap.put("secretKeyRef", secret.getSecretKeyRef());
+                    }
+                }
+                // If neither directoryPath nor envVarName is specified, skip this secret
+                if (!secretMap.containsKey("directoryPath") && !secretMap.containsKey("envVarName")) {
+                    continue;
+                }
+                
+                secrets.add(secretMap);
+            }
+            if (!secrets.isEmpty()) {
+                container.put("secrets", secrets);
             }
         }
         
-        // Capabilities (at root level, same as spec)
-        // Set executeAsCaller: true only if SPCS user token is available (indicates caller's rights context)
-        yaml.append("capabilities:\n");
-        yaml.append("  securityContext:\n");
-        boolean executeAsCaller = false;
-        if (authentication instanceof SpcsAuthenticationToken) {
-            Object credentials = authentication.getCredentials();
-            if (credentials != null) {
-                String userToken = credentials.toString();
-                if (!userToken.isBlank()) {
-                    executeAsCaller = true;
+        // Readiness probe (optional)
+        if (specExtension != null && specExtension.getSpcsReadinessProbe() != null) {
+            SpcsReadinessProbe readinessProbe = specExtension.getSpcsReadinessProbe();
+            if (readinessProbe.getPort() != null && readinessProbe.getPath() != null && !readinessProbe.getPath().isEmpty()) {
+                Map<String, Object> readinessProbeMap = new HashMap<>();
+                readinessProbeMap.put("port", readinessProbe.getPort());
+                readinessProbeMap.put("path", readinessProbe.getPath());
+                container.put("readinessProbe", readinessProbeMap);
+            }
+        }
+        
+        // Volume mounts (optional list) - parsed from ContainerSpec.volumes
+        if (spec.getVolumes() != null && spec.getVolumes().isPresent() && !spec.getVolumes().getValue().isEmpty()) {
+            List<Map<String, Object>> volumeMounts = new ArrayList<>();
+            for (String volumeMountString : spec.getVolumes().getValue()) {
+                SpcsVolumeMount volumeMount = parseVolumeMount(volumeMountString);
+                if (volumeMount != null) {
+                    Map<String, Object> volumeMountMap = new HashMap<>();
+                    volumeMountMap.put("name", volumeMount.getName());
+                    volumeMountMap.put("mountPath", volumeMount.getMountPath());
+                    volumeMounts.add(volumeMountMap);
                 }
             }
-        }
-        yaml.append("    executeAsCaller: ").append(executeAsCaller).append("\n");
-        
-        // Service roles (at root level, same as spec)
-        // Service roles are always needed (even when running inside SPCS) when endpoints are present
-        if (!endpointNames.isEmpty()) {
-            yaml.append("serviceRoles:\n");
-            yaml.append("- name: ").append(quoteYamlValue(serviceName)).append("\n");
-            yaml.append("  endpoints:\n");
-            for (String endpointName : endpointNames) {
-                yaml.append("  - ").append(quoteYamlValue(endpointName)).append("\n");
+            if (!volumeMounts.isEmpty()) {
+                container.put("volumeMounts", volumeMounts);
             }
         }
         
-        return yaml.toString();
+        return container;
     }
-
+    
+    /**
+     * Builds a volume map structure for YAML serialization from SpcsVolume object.
+     * 
+     * @param volume The SpcsVolume object
+     * @return Map representing the volume structure, or null if invalid
+     */
+    private Map<String, Object> buildVolumeMap(SpcsVolume volume) {
+        if (volume == null || volume.getName() == null || volume.getSource() == null) {
+            return null;
+        }
+        
+        Map<String, Object> volumeMap = new HashMap<>();
+        volumeMap.put("name", volume.getName());
+        volumeMap.put("source", volume.getSource());
+        
+        if (volume.getSize() != null && !volume.getSize().isEmpty()) {
+            // Normalize size format for block and memory volumes - Snowflake requires "Gi" suffix
+            String normalizedSize = normalizeVolumeSize(volume.getSize(), volume.getSource());
+            volumeMap.put("size", normalizedSize);
+        }
+        
+        if (volume.getUid() != null) {
+            volumeMap.put("uid", volume.getUid());
+        }
+        
+        if (volume.getGid() != null) {
+            volumeMap.put("gid", volume.getGid());
+        }
+        
+        if (volume.getBlockConfig() != null) {
+            Map<String, Object> blockConfigMap = new HashMap<>();
+            SpcsBlockConfig blockConfig = volume.getBlockConfig();
+            
+            if (blockConfig.getInitialContents() != null && blockConfig.getInitialContents().getFromSnapshot() != null) {
+                Map<String, Object> initialContentsMap = new HashMap<>();
+                initialContentsMap.put("fromSnapshot", blockConfig.getInitialContents().getFromSnapshot());
+                blockConfigMap.put("initialContents", initialContentsMap);
+            }
+            
+            if (blockConfig.getIops() != null) {
+                blockConfigMap.put("iops", blockConfig.getIops());
+            }
+            
+            if (blockConfig.getThroughput() != null) {
+                blockConfigMap.put("throughput", blockConfig.getThroughput());
+            }
+            
+            if (blockConfig.getEncryption() != null) {
+                blockConfigMap.put("encryption", blockConfig.getEncryption());
+            }
+            
+            // snapshotOnDelete: default to true for volumes managed by ShinyProxy
+            // This allows safe deletion of services with volumes
+            Boolean snapshotOnDelete = blockConfig.getSnapshotOnDelete();
+            if (snapshotOnDelete == null) {
+                snapshotOnDelete = true; // Default to true for ShinyProxy-managed volumes
+            }
+            blockConfigMap.put("snapshotOnDelete", snapshotOnDelete);
+            
+            if (!blockConfigMap.isEmpty()) {
+                volumeMap.put("blockConfig", blockConfigMap);
+            }
+        }
+        
+        if (volume.getStageConfig() != null) {
+            Map<String, Object> stageConfigMap = new HashMap<>();
+            SpcsStageConfig stageConfig = volume.getStageConfig();
+            
+            if (stageConfig.getName() != null) {
+                stageConfigMap.put("name", stageConfig.getName());
+            }
+            
+            if (stageConfig.getMetadataCache() != null) {
+                stageConfigMap.put("metadataCache", stageConfig.getMetadataCache());
+            }
+            
+            if (stageConfig.getResources() != null) {
+                Map<String, Object> resourcesMap = new HashMap<>();
+                boolean hasResources = false;
+                
+                if (stageConfig.getResources().getRequests() != null) {
+                    Map<String, Object> requestsMap = new HashMap<>();
+                    if (stageConfig.getResources().getRequests().getMemory() != null) {
+                        requestsMap.put("memory", stageConfig.getResources().getRequests().getMemory());
+                        hasResources = true;
+                    }
+                    if (stageConfig.getResources().getRequests().getCpu() != null) {
+                        requestsMap.put("cpu", stageConfig.getResources().getRequests().getCpu());
+                        hasResources = true;
+                    }
+                    if (!requestsMap.isEmpty()) {
+                        resourcesMap.put("requests", requestsMap);
+                    }
+                }
+                
+                if (stageConfig.getResources().getLimits() != null) {
+                    Map<String, Object> limitsMap = new HashMap<>();
+                    if (stageConfig.getResources().getLimits().getMemory() != null) {
+                        limitsMap.put("memory", stageConfig.getResources().getLimits().getMemory());
+                        hasResources = true;
+                    }
+                    if (stageConfig.getResources().getLimits().getCpu() != null) {
+                        limitsMap.put("cpu", stageConfig.getResources().getLimits().getCpu());
+                        hasResources = true;
+                    }
+                    if (!limitsMap.isEmpty()) {
+                        resourcesMap.put("limits", limitsMap);
+                    }
+                }
+                
+                if (hasResources && !resourcesMap.isEmpty()) {
+                    stageConfigMap.put("resources", resourcesMap);
+                }
+            }
+            
+            if (!stageConfigMap.isEmpty()) {
+                volumeMap.put("stageConfig", stageConfigMap);
+            }
+        }
+        
+        return volumeMap;
+    }
+    
+    /**
+     * Normalizes volume size format for Snowflake SPCS requirements.
+     * For block and memory volumes, Snowflake requires the size to end with "Gi" suffix.
+     * If a plain number is provided (e.g., "20"), it will be converted to "20Gi".
+     * 
+     * @param size The size value from configuration
+     * @param source The volume source type (block, memory, stage, local)
+     * @return Normalized size string with proper unit suffix
+     */
+    private String normalizeVolumeSize(String size, String source) {
+        if (size == null || size.isEmpty()) {
+            return size;
+        }
+        
+        String trimmed = size.trim();
+        
+        // For block and memory volumes, Snowflake requires "Gi" suffix
+        if ("block".equals(source) || "memory".equals(source)) {
+            // Check if it's already a valid format (ends with Gi, case-insensitive)
+            if (trimmed.toLowerCase().endsWith("gi")) {
+                return trimmed; // Already has Gi suffix
+            }
+            
+            // Check if it's a plain number (optionally with whitespace)
+            try {
+                // Try to parse as integer
+                String numberPart = trimmed.replaceAll("\\s+", "");
+                Integer.parseInt(numberPart);
+                // If successful, it's a plain number - append "Gi"
+                return numberPart + "Gi";
+            } catch (NumberFormatException e) {
+                // Not a plain number, might have other units - throw error with helpful message
+                throw new IllegalStateException(String.format(
+                    "Invalid size format '%s' for %s volume. Block and memory volumes require size to be an integer with 'Gi' suffix (e.g., '20Gi'). Got: '%s'", 
+                    size, source, trimmed));
+            }
+        }
+        
+        // For other volume types (local, stage), return as-is
+        return trimmed;
+    }
+    
+    /**
+     * Parses a volume mount string in ECS-style format: "volume-name:/mount/path"
+     * 
+     * @param volumeMountString The volume mount string (format: "volume-name:/mount/path")
+     * @return SpcsVolumeMount object, or null if parsing fails
+     */
+    private SpcsVolumeMount parseVolumeMount(String volumeMountString) {
+        if (volumeMountString == null || volumeMountString.isEmpty()) {
+            return null;
+        }
+        
+        int colonIndex = volumeMountString.indexOf(':');
+        if (colonIndex <= 0 || colonIndex >= volumeMountString.length() - 1) {
+            log.warn("Invalid volume mount format (expected 'volume-name:/mount/path'): {}", volumeMountString);
+            return null;
+        }
+        
+        String volumeName = volumeMountString.substring(0, colonIndex).trim();
+        String mountPath = volumeMountString.substring(colonIndex + 1).trim();
+        
+        if (volumeName.isEmpty() || mountPath.isEmpty()) {
+            log.warn("Invalid volume mount format (volume name or mount path is empty): {}", volumeMountString);
+            return null;
+        }
+        
+        return SpcsVolumeMount.builder()
+            .name(volumeName)
+            .mountPath(mountPath)
+            .build();
+    }
+    
     /**
      * Formats a Snowflake image name to the correct format.
      * If the image contains a snowflakecomputing.com domain, removes it and extracts the path.
@@ -867,55 +1239,9 @@ public class SpcsBackend extends AbstractContainerBackend {
         }
     }
 
-    /**
-     * Safely quotes a YAML string value to prevent injection attacks.
-     * Escapes special characters and wraps in double quotes when necessary.
-     */
-    private String quoteYamlValue(String value) {
-        if (value == null) {
-            return "\"\"";
-        }
-        
-        // Always quote values that could be interpreted as YAML syntax
-        // Check for special YAML characters, control characters, or values that look like YAML types
-        boolean needsQuoting = value.contains(":") 
-            || value.contains("#") 
-            || value.contains("@") 
-            || value.contains("&") 
-            || value.contains("*") 
-            || value.contains("!") 
-            || value.contains("|") 
-            || value.contains(">") 
-            || value.contains("'") 
-            || value.contains("\"") 
-            || value.contains("\n") 
-            || value.contains("\r") 
-            || value.contains("\t")
-            || value.contains("{{")  // Template syntax
-            || value.contains("}}")
-            || value.trim().isEmpty()  // Empty strings
-            || value.matches("^(true|false|null|yes|no|on|off)$")  // YAML boolean/null keywords
-            || value.matches("^-?\\d+$")  // Numbers at start of line
-            || value.startsWith("-")  // List indicator
-            || value.startsWith("[")  // Array syntax
-            || value.startsWith("{");  // Object syntax
-        
-        if (needsQuoting) {
-            // Escape backslashes first, then quotes
-            String escaped = value
-                .replace("\\", "\\\\")  // Escape backslashes
-                .replace("\"", "\\\"")  // Escape double quotes
-                .replace("\n", "\\n")   // Escape newlines
-                .replace("\r", "\\r")   // Escape carriage returns
-                .replace("\t", "\\t");  // Escape tabs
-            return "\"" + escaped + "\"";
-        }
-        
-        return value;
-    }
 
     @Override
-    protected void doStopProxy(Proxy proxy) {
+    public void pauseProxy(Proxy proxy) {
         if (Thread.currentThread().isInterrupted()) {
             return;
         }
@@ -929,8 +1255,138 @@ public class SpcsBackend extends AbstractContainerBackend {
                     String serviceSchema = parts[1];
                     String serviceName = parts[2];
                     try {
-                        snowflakeServiceAPI.deleteService(serviceDb, serviceSchema, serviceName, true);
-                        slog.info(proxy, String.format("Deleted Snowflake service: %s", fullServiceName));
+                        snowflakeServiceAPI.suspendService(serviceDb, serviceSchema, serviceName, false);
+                        slog.info(proxy, String.format("Suspended Snowflake service: %s", fullServiceName));
+                    } catch (ApiException e) {
+                        slog.warn(proxy, String.format("Error suspending Snowflake service %s: %s", fullServiceName, e.getMessage()));
+                        throw new ContainerProxyException("Failed to suspend Snowflake service: " + e.getMessage(), e);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public Proxy resumeProxy(Authentication user, Proxy proxy, ProxySpec proxySpec) throws ProxyFailedToStartException {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new ProxyFailedToStartException("Thread interrupted", null, proxy);
+        }
+        
+        // All containers in a proxy share the same service, so we only need to resume once
+        Container firstContainer = proxy.getContainers().isEmpty() ? null : proxy.getContainers().get(0);
+        if (firstContainer == null) {
+            throw new ProxyFailedToStartException("Proxy has no containers", null, proxy);
+        }
+        
+        String fullServiceName = firstContainer.getRuntimeValue(BackendContainerNameKey.inst);
+        if (fullServiceName == null) {
+            throw new ProxyFailedToStartException("Service name not found in container runtime values", null, proxy);
+        }
+        
+        // Parse full service name: database.schema.service
+        String[] parts = fullServiceName.split("\\.");
+        if (parts.length != 3) {
+            throw new ProxyFailedToStartException("Invalid service name format: " + fullServiceName, null, proxy);
+        }
+        
+        String serviceDb = parts[0];
+        String serviceSchema = parts[1];
+        String serviceName = parts[2];
+        
+        try {
+            // Resume the service
+            snowflakeServiceAPI.resumeService(serviceDb, serviceSchema, serviceName, false);
+            slog.info(proxy, String.format("Resuming Snowflake service: %s", fullServiceName));
+            
+            // Wait for service to be ready (similar to start container logic)
+            boolean serviceReady = Retrying.retry((currentAttempt, maxAttempts) -> {
+                try {
+                    List<ServiceContainer> containers = snowflakeServiceAPI.listServiceContainers(serviceDb, serviceSchema, serviceName);
+                    if (containers == null || containers.isEmpty()) {
+                        return Retrying.FAILURE;
+                    }
+                    
+                    // Check if all containers in the service are running/ready
+                    boolean allRunning = true;
+                    for (ServiceContainer serviceContainer : containers) {
+                        String status = serviceContainer.getStatus();
+                        String serviceStatus = serviceContainer.getServiceStatus();
+                        if (status != null && (status.equals("RUNNING") || status.equals("UP") || status.equals("READY"))) {
+                            continue;
+                        }
+                        if (serviceStatus != null && (serviceStatus.equals("RUNNING") || serviceStatus.equals("UP") || serviceStatus.equals("READY"))) {
+                            continue;
+                        }
+                        if (status != null && (status.equals("FAILED") || status.equals("ERROR"))) {
+                            slog.warn(proxy, String.format("SPCS container failed during resume: status=%s, message=%s", status, serviceContainer.getMessage()));
+                            return new Retrying.Result(false, false);
+                        }
+                        // Container is not running yet
+                        allRunning = false;
+                        break;
+                    }
+                    
+                    if (!allRunning) {
+                        return Retrying.FAILURE;
+                    }
+                    
+                    return Retrying.SUCCESS;
+                } catch (ApiException e) {
+                    slog.warn(proxy, String.format("Error checking service containers during resume: %s", e.getMessage()));
+                    return Retrying.FAILURE;
+                }
+            }, serviceWaitTime, "SPCS Service Resume", 10, proxy, slog);
+            
+            if (!serviceReady) {
+                throw new ProxyFailedToStartException("Service did not resume within timeout period", null, proxy);
+            }
+            
+            // On resume we only re-apply HTTP headers (e.g. fresh ingress Authorization). Ingress/private URL is not recalculated.
+            boolean needsEndpoints = !isRunningInsideSpcs();
+            if (needsEndpoints) {
+                Map<String, URI> existingTargets = proxy.getTargets();
+                if (existingTargets != null && !existingTargets.isEmpty()) {
+                    Proxy.ProxyBuilder proxyBuilder = proxy.toBuilder();
+                    String endpointUrl = extractEndpointUrlFromTargets(existingTargets);
+                    Map<String, String> headers = setupProxyContainerHTTPHeaders(proxy, endpointUrl, user);
+                    proxyBuilder.addRuntimeValue(new RuntimeValue(HttpHeadersKey.inst, new HttpHeaders(headers)), true);
+                    slog.info(proxy, String.format("Setting up Authorization header for SPCS ingress access on resume (auth method: %s)", snowflakeTokenType != null ? snowflakeTokenType : authMethod.name()));
+                    slog.info(proxy, String.format("Resumed Snowflake service: %s", fullServiceName));
+                    return proxyBuilder.build();
+                }
+            }
+            slog.info(proxy, String.format("Resumed Snowflake service: %s", fullServiceName));
+            return proxy;
+            
+        } catch (ApiException e) {
+            slog.warn(proxy, String.format("Error resuming Snowflake service %s: %s", fullServiceName, e.getMessage()));
+            throw new ProxyFailedToStartException("Failed to resume Snowflake service: " + e.getMessage(), e, proxy);
+        }
+    }
+
+    @Override
+    public Boolean supportsPause() {
+        return true;
+    }
+
+    @Override
+    protected void doStopProxy(Proxy proxy) {
+        if (Thread.currentThread().isInterrupted()) {
+            return;
+        }
+        for (Container container : proxy.getContainers()) {
+            String fullServiceName = container.getRuntimeValueOrNull(BackendContainerNameKey.inst);
+            if (fullServiceName != null) {
+                // Parse full service name: database.schema.service
+                String[] parts = fullServiceName.split("\\.");
+                if (parts.length == 3) {
+                    String serviceDb = parts[0];
+                    String serviceSchema = parts[1];
+                    String serviceName = parts[2];
+                    try {
+                        boolean forceDelete = getForceDeleteForService(serviceName);
+                        deleteServiceWithForce(serviceDb, serviceSchema, serviceName, forceDelete);
+                        slog.info(proxy, String.format("Deleted Snowflake service: %s (force=%s)", fullServiceName, forceDelete));
                     } catch (ApiException e) {
                         slog.warn(proxy, String.format("Error deleting Snowflake service %s: %s", fullServiceName, e.getMessage()));
                     }
@@ -941,7 +1397,7 @@ public class SpcsBackend extends AbstractContainerBackend {
         // Wait for service to be stopped
         boolean isInactive = Retrying.retry((currentAttempt, maxAttempts) -> {
             for (Container container : proxy.getContainers()) {
-                String fullServiceName = container.getRuntimeValue(BackendContainerNameKey.inst);
+                String fullServiceName = container.getRuntimeValueOrNull(BackendContainerNameKey.inst);
                 if (fullServiceName != null) {
                     String[] parts = fullServiceName.split("\\.");
                     if (parts.length == 3) {
@@ -1006,50 +1462,152 @@ public class SpcsBackend extends AbstractContainerBackend {
         ArrayList<ExistingContainerInfo> containers = new ArrayList<>();
         
         try {
-            // List services starting with "SP_SERVICE_" (uppercase for consistency with Snowflake)
             List<Service> services = snowflakeServiceAPI.listServices(database, schema, "SP_SERVICE__%", null, null, null);
+            java.util.Set<Service> allServices = new java.util.HashSet<>();
+            if (services != null) {
+                allServices.addAll(services);
+            }
             
-            if (services == null || services.isEmpty()) {
+            if (allServices.isEmpty()) {
                 log.info("No existing SPCS services found to recover");
                 return containers;
             }
             
-            log.info("Found {} SPCS service(s) to scan for recovery", services.size());
+            log.info("Found {} SPCS service(s) to scan for recovery", allServices.size());
             
-            for (Service service : services) {
+            for (Service service : allServices) {
                 String serviceName = service.getName();
-                // Service names are always uppercase, check for "SP_SERVICE_" prefix
                 if (serviceName == null || !serviceName.startsWith("SP_SERVICE__")) {
                     continue;
                 }
                 
-                // Check if service has containers and is running, delete if not
-                if (!checkServiceContainersAndRunningStatus(serviceName)) {
-                    deleteServiceLogReason(serviceName, "Service has no containers or no running containers");
+                // Use service status to decide recovery; list is expected to return status
+                String status = service.getStatus();
+                if (status == null) {
+                    deleteServiceLogReason(serviceName, "Service status unknown (null)");
+                    continue;
+                }
+                String statusUpper = status.toUpperCase(java.util.Locale.ROOT);
+                if ("FAILED".equals(statusUpper) || "INTERNAL_ERROR".equals(statusUpper)) {
+                    deleteServiceLogReason(serviceName, "Service status: " + status);
+                    continue;
+                }
+                // DONE/DELETING/DELETED: service no longer exists (DONE is typically for job services)
+                if ("DONE".equals(statusUpper) || "DELETING".equals(statusUpper) || "DELETED".equals(statusUpper)) {
                     continue;
                 }
                 
-                // Fetch service and extract all metadata (image, comment metadata, proxyId, containerIndex)
-                Map<String, String> metadata = new HashMap<>();
+                // PENDING, RUNNING = up; SUSPENDED, SUSPENDING = paused
+                ProxyStatus recoveredStatus = ("SUSPENDED".equals(statusUpper) || "SUSPENDING".equals(statusUpper))
+                    ? ProxyStatus.Paused : null;
                 
-                if (!fetchServiceImageAndMetadata(serviceName, metadata)) {
+                // Fetch service and extract metadata
+                Map<String, String> serviceMetadata = new HashMap<>();
+                String specText = null;
+                
+                if (!fetchServiceImageAndMetadata(serviceName, serviceMetadata)) {
                     deleteServiceLogReason(serviceName, "Error fetching service metadata");
                     continue;
                 }
                 
+                // Get spec text for container extraction
+                try {
+                    Service fullService = snowflakeServiceAPI.fetchService(database, schema, serviceName);
+                    ServiceSpec serviceSpec = fullService.getSpec();
+                    if (serviceSpec instanceof ServiceSpecInlineText) {
+                        specText = ((ServiceSpecInlineText) serviceSpec).getSpecText();
+                    }
+                } catch (ApiException e) {
+                    log.warn("Error fetching service spec for recovery: {}", e.getMessage());
+                }
+                
                 // Validate and delete if unrecoverable (uses comment metadata as primary source)
-                if (!validateAndDeleteIfUnrecoverable(serviceName, metadata)) {
+                if (!validateAndDeleteIfUnrecoverable(serviceName, serviceMetadata)) {
                     continue; // Service was deleted
                 }
                 
-                // Build and add to recovery list (all data comes from comment metadata)
-                ExistingContainerInfo containerInfo = buildExistingContainerInfo(serviceName, metadata);
+                // Extract container metadata from service comment (supports multiple proxies per service)
+                // Structure: {"proxies": {"proxyId": {"proxyRuntimeValues": {...}, "containers": {...}}}}
+                Map<String, Object> allContainersMetadata = new HashMap<>(); // All containers from all proxies
+                Map<String, String> allProxyRuntimeValues = new HashMap<>(); // Proxy runtime values keyed by proxyId
+                try {
+                    Service fullService = snowflakeServiceAPI.fetchService(database, schema, serviceName);
+                    String comment = fullService.getComment();
+                    if (comment != null && !comment.isEmpty()) {
+                        Map<String, Object> commentMetadata = jsonMapper.readValue(comment, new TypeReference<Map<String, Object>>() {});
+                        if (commentMetadata != null) {
+                            // Extract proxies map
+                            if (commentMetadata.containsKey("proxies")) {
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> proxies = (Map<String, Object>) commentMetadata.get("proxies");
+                                if (proxies != null) {
+                                    // Iterate through all proxies and extract their containers and runtime values
+                                    for (Map.Entry<String, Object> proxyEntry : proxies.entrySet()) {
+                                        String proxyId = proxyEntry.getKey();
+                                        @SuppressWarnings("unchecked")
+                                        Map<String, Object> proxyData = (Map<String, Object>) proxyEntry.getValue();
+                                        
+                                        // Extract proxy-level runtime values for this proxy
+                                        if (proxyData.containsKey("proxyRuntimeValues")) {
+                                            @SuppressWarnings("unchecked")
+                                            Map<String, String> proxyValues = (Map<String, String>) proxyData.get("proxyRuntimeValues");
+                                            if (proxyValues != null) {
+                                                // Store with proxyId prefix to avoid conflicts
+                                                for (Map.Entry<String, String> entry : proxyValues.entrySet()) {
+                                                    allProxyRuntimeValues.put(proxyId + ":" + entry.getKey(), entry.getValue());
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Extract containers for this proxy
+                                        // Containers are keyed by container index (e.g., "0", "1")
+                                        // We need to map them to container names for lookup during recovery
+                                        if (proxyData.containsKey("containers")) {
+                                            @SuppressWarnings("unchecked")
+                                            Map<String, Object> proxyContainers = (Map<String, Object>) proxyData.get("containers");
+                                            if (proxyContainers != null) {
+                                                // Convert container index keys to container names for lookup
+                                                // Container name format: sp--{proxyId}--{containerIndex}
+                                                for (Map.Entry<String, Object> containerEntry : proxyContainers.entrySet()) {
+                                                    String containerIndex = containerEntry.getKey();
+                                                    // Build container name from proxyId and index (use same normalization as generateContainerName)
+                                                    String normalizedProxyId = normalizeContainerName(proxyId);
+                                                    String expectedContainerName = "sp--" + normalizedProxyId + "--" + containerIndex;
+                                                    allContainersMetadata.put(expectedContainerName, containerEntry.getValue());
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Error extracting container metadata from comment for service {}: {}", serviceName, e.getMessage());
+                }
+                
+                // Extract all containers from the service YAML
+                // Note: We pass all containers metadata, and extractContainersFromSpecText will match by container name
+                List<Map<String, String>> containerMetadataList = extractContainersFromSpecText(specText, allProxyRuntimeValues, allContainersMetadata);
+                
+                // recoveredStatus already set from service status above (SUSPENDED/SUSPENDING -> Paused)
+                
+                // Build ExistingContainerInfo for each container
+                for (Map<String, String> containerMetadata : containerMetadataList) {
+                    String containerName = containerMetadata.get("containerName");
+                    // Container name format: sp--{proxyId}--{containerIndex}
+                    // Container metadata (including portMappings, runtimeValues) is already merged
+                    // in extractContainersFromSpecText. containerId is a random UUID that can be regenerated.
+                    String containerId = UUID.randomUUID().toString();
+                    
+                    ExistingContainerInfo containerInfo = buildExistingContainerInfo(containerId, serviceName, containerMetadata, recoveredStatus);
                 containers.add(containerInfo);
-                String recoveredUserId = metadata.get(UserIdKey.inst.getKeyAsLabel());
-                String recoveredProxyId = metadata.get(ProxyIdKey.inst.getKeyAsLabel());
-                String recoveredSpecId = metadata.get(ProxySpecIdKey.inst.getKeyAsLabel());
-                log.info("Added service {} to recovery list (userId: {}, proxyId: {}, specId: {})", 
-                            serviceName, recoveredUserId, recoveredProxyId, recoveredSpecId);
+                    String recoveredUserId = containerMetadata.get(UserIdKey.inst.getKeyAsLabel());
+                    String recoveredProxyId = containerMetadata.get(ProxyIdKey.inst.getKeyAsLabel());
+                    String recoveredSpecId = containerMetadata.get(ProxySpecIdKey.inst.getKeyAsLabel());
+                    log.info("Added container {} (id: {}) from service {} to recovery list (userId: {}, proxyId: {}, specId: {})", 
+                                containerName, containerId, serviceName, recoveredUserId, recoveredProxyId, recoveredSpecId);
+                }
             }
             
             log.info("Completed scanning SPCS services: {} recoverable service(s) found", containers.size());
@@ -1066,48 +1624,14 @@ public class SpcsBackend extends AbstractContainerBackend {
     private void deleteServiceLogReason(String serviceName, String reason) {
         log.warn("Deleting service {} due to: {}", serviceName, reason);
         try {
-            snowflakeServiceAPI.deleteService(database, schema, serviceName, true);
-            log.info("Deleted Snowflake service: {}.{}.{}", database, schema, serviceName);
+            boolean forceDelete = getForceDeleteForService(serviceName);
+            deleteServiceWithForce(database, schema, serviceName, forceDelete);
+            log.info("Deleted Snowflake service: {}.{}.{} (force={})", database, schema, serviceName, forceDelete);
         } catch (ApiException e) {
             log.warn("Error deleting Snowflake service {}.{}.{}: {}", database, schema, serviceName, e.getMessage());
         }
     }
     
-    /**
-     * Checks if service has containers and if any are running. Returns false if service should be deleted or on error.
-     * Does not delete the service - caller is responsible for deletion.
-     */
-    private boolean checkServiceContainersAndRunningStatus(String serviceName) {
-        try {
-            List<ServiceContainer> serviceContainers = snowflakeServiceAPI.listServiceContainers(database, schema, serviceName);
-            if (serviceContainers == null || serviceContainers.isEmpty()) {
-                log.warn("Service {} has no containers", serviceName);
-                return false;
-            }
-            
-            // Check if any container is running/ready
-            boolean hasRunningContainer = false;
-            for (ServiceContainer serviceContainer : serviceContainers) {
-                String status = serviceContainer.getStatus();
-                String serviceStatus = serviceContainer.getServiceStatus();
-                if ((status != null && (status.equals("RUNNING") || status.equals("UP") || status.equals("READY"))) ||
-                    (serviceStatus != null && (serviceStatus.equals("RUNNING") || serviceStatus.equals("UP") || serviceStatus.equals("READY")))) {
-                    hasRunningContainer = true;
-                    break;
-                }
-            }
-            
-            if (!hasRunningContainer) {
-                log.warn("Service {} has no running containers", serviceName);
-                return false;
-            }
-            
-            return true;
-        } catch (ApiException e) {
-            log.warn("Error checking service containers for {}: {}", serviceName, e.getMessage());
-            return false;
-        }
-    }
     
     /**
      * Also calculates and stores Authorization header for SPCS ingress access
@@ -1129,15 +1653,30 @@ public class SpcsBackend extends AbstractContainerBackend {
             }
             
             // Extract comment (metadata)
-            // Comment contains all runtime values stored during service creation (similar to Docker labels)
+            // Comment format: {"proxies": {"proxyId": {"proxyRuntimeValues": {...}, "containers": {...}}}}
             String comment = fullService.getComment();
             if (comment != null && !comment.isEmpty()) {
                 try {
-                    TypeToken<Map<String, String>> typeToken = new TypeToken<Map<String, String>>() {};
-                    Map<String, String> commentMetadata = JSON.getGson().fromJson(comment, typeToken.getType());
-                    if (commentMetadata != null) {
-                        metadata.putAll(commentMetadata);
-                        log.debug("Extracted {} metadata entries from comment for service {}", commentMetadata.size(), serviceName);
+                    Map<String, Object> commentRaw = jsonMapper.readValue(comment, new TypeReference<Map<String, Object>>() {});
+                    if (commentRaw != null && commentRaw.containsKey("proxies") && commentRaw.get("proxies") instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> proxies = (Map<String, Object>) commentRaw.get("proxies");
+                        for (Object proxyDataObj : proxies.values()) {
+                            if (proxyDataObj instanceof Map) {
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> proxyData = (Map<String, Object>) proxyDataObj;
+                                Object pv = proxyData.get("proxyRuntimeValues");
+                                if (pv instanceof Map) {
+                                    @SuppressWarnings("unchecked")
+                                    Map<String, String> proxyValues = (Map<String, String>) pv;
+                                    if (proxyValues != null) {
+                                        metadata.putAll(proxyValues);
+                                    }
+                                }
+                                break; // one proxy's runtime values enough for instanceId/realmId validation
+                            }
+                        }
+                        log.debug("Extracted proxy runtime values from comment for service {}", serviceName);
                     }
                 } catch (Exception e) {
                     log.warn("Error parsing metadata from comment for service {}: {}", serviceName, e.getMessage());
@@ -1163,70 +1702,154 @@ public class SpcsBackend extends AbstractContainerBackend {
     }
     
     /**
-     * Extracts image name from YAML spec text.
+     * Extracts all containers from service YAML spec text.
+     * Returns a list of metadata maps, one per container, including container name and image.
+     * Container-specific runtime values (like ContainerIndexKey and PortMappingsKey) are derived per-container.
+     * 
+     * @param specText The service YAML spec text
+     * @param allProxyRuntimeValues Proxy-level runtime values from service comment (keyed by "proxyId:key" or just "key" for backward compatibility)
+     * @param allContainersMetadata Map of container names to container metadata objects (from all proxies in service comment)
+     * @return List of container metadata maps, each with container-specific values added
+     */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, String>> extractContainersFromSpecText(String specText, Map<String, String> allProxyRuntimeValues, Map<String, Object> allContainersMetadata) {
+        List<Map<String, String>> containerList = new ArrayList<>();
+        
+        if (specText == null || specText.isEmpty()) {
+            log.warn("extractContainersFromSpecText: specText is null or empty");
+            return containerList;
+        }
+        
+        try {
+            // Parse YAML into Map structure
+            Map<String, Object> serviceSpec = yamlMapper.readValue(specText, Map.class);
+            Map<String, Object> specSection = (Map<String, Object>) serviceSpec.get("spec");
+            if (specSection == null) {
+                log.warn("extractContainersFromSpecText: spec section not found in YAML");
+                return containerList;
+            }
+            
+            List<Map<String, Object>> containers = (List<Map<String, Object>>) specSection.get("containers");
+            if (containers == null) {
+                log.warn("extractContainersFromSpecText: containers list not found in YAML");
+                return containerList;
+            }
+            
+            // Process each container
+            int containerIndex = 0;
+            for (Map<String, Object> containerMap : containers) {
+                Map<String, String> currentContainer = new HashMap<>();
+                
+                // Extract container name
+                Object nameObj = containerMap.get("name");
+                if (nameObj == null) {
+                    log.warn("extractContainersFromSpecText: container at index {} has no name", containerIndex);
+                    containerIndex++;
+                    continue;
+                }
+                String currentContainerName = nameObj.toString();
+                currentContainer.put("containerName", currentContainerName);
+                
+                // Extract image
+                Object imageObj = containerMap.get("image");
+                if (imageObj != null) {
+                    currentContainer.put("image", imageObj.toString());
+                }
+                
+                // Extract proxyId from container name (format: sp--{proxyId}--{containerIndex})
+                String proxyId = null;
+                if (currentContainerName.startsWith("sp--") && currentContainerName.contains("--")) {
+                    String[] parts = currentContainerName.split("--", 3);
+                    if (parts.length == 3) {
+                        proxyId = parts[1]; // Extract proxyId from container name
+                    }
+                }
+                
+                // Add proxy-level runtime values for this proxy
+                if (proxyId != null) {
+                    for (Map.Entry<String, String> entry : allProxyRuntimeValues.entrySet()) {
+                        String key = entry.getKey();
+                        if (key.startsWith(proxyId + ":")) {
+                            // Extract the actual key name (remove proxyId prefix)
+                            String actualKey = key.substring(proxyId.length() + 1);
+                            currentContainer.put(actualKey, entry.getValue());
+                        } else if (!allProxyRuntimeValues.containsKey(proxyId + ":" + key)) {
+                            // Only add unprefixed keys if there's no proxyId-prefixed version
+                            currentContainer.put(key, entry.getValue());
+                        }
+                    }
+                } else {
+                    // Fallback: add all proxy runtime values if we can't extract proxyId
+                    currentContainer.putAll(allProxyRuntimeValues);
+                }
+                
+                // Merge container-specific metadata from allContainersMetadata map
+                Map<String, Object> containerMeta = (Map<String, Object>) allContainersMetadata.get(currentContainerName);
+                if (containerMeta != null) {
+                    // Add portMappings
+                    if (containerMeta.containsKey("portMappings")) {
+                        currentContainer.put(PortMappingsKey.inst.getKeyAsLabel(), containerMeta.get("portMappings").toString());
+                    }
+                    
+                    // Add container-specific runtime values
+                    if (containerMeta.containsKey("runtimeValues")) {
+                        Map<String, String> containerRuntimeValues = (Map<String, String>) containerMeta.get("runtimeValues");
+                        if (containerRuntimeValues != null) {
+                            currentContainer.putAll(containerRuntimeValues);
+                        }
+                    }
+                }
+                
+                // Add container index (0-based)
+                currentContainer.put(ContainerIndexKey.inst.getKeyAsLabel(), String.valueOf(containerIndex));
+                containerList.add(currentContainer);
+                containerIndex++;
+            }
+        } catch (IOException e) {
+            log.error("Failed to parse YAML spec text: {}", e.getMessage(), e);
+        }
+        
+        return containerList;
+    }
+    
+    /**
+     * Extracts image name from YAML spec text (legacy method, extracts first container's image).
      * Expected YAML structure:
      *   spec:
      *     containers:
      *     - name: <name>
      *       image: <image>
      */
+    @SuppressWarnings("unchecked")
     private String extractImageFromSpecText(String specText) {
         if (specText == null || specText.isEmpty()) {
             log.warn("extractImageFromSpecText: specText is null or empty");
             return null;
         }
         
-        String[] lines = specText.split("\n");
-        boolean inContainersSection = false;
-        
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
-            String trimmed = line.trim();
-            
-            if (trimmed.isEmpty()) {
-                continue;
+        try {
+            Map<String, Object> serviceSpec = yamlMapper.readValue(specText, Map.class);
+            Map<String, Object> specSection = (Map<String, Object>) serviceSpec.get("spec");
+            if (specSection == null) {
+                return null;
             }
             
-            // Detect containers section
-            if (trimmed.equals("containers:") || trimmed.startsWith("containers:")) {
-                inContainersSection = true;
-                continue;
+            List<Map<String, Object>> containers = (List<Map<String, Object>>) specSection.get("containers");
+            if (containers == null || containers.isEmpty()) {
+                return null;
             }
             
-            // If we're in containers section, look for the image field
-            if (inContainersSection) {
-                // Check if we've left the containers section (hit a top-level key at same or less indentation as "containers:")
-                int leadingSpaces = line.length() - line.trim().length();
-                if (leadingSpaces <= 2 && !trimmed.startsWith("-") && 
-                    !trimmed.startsWith("name:") && !trimmed.startsWith("image:") && 
-                    !trimmed.startsWith("command:") && !trimmed.startsWith("env:") &&
-                    !trimmed.startsWith("resources:")) {
-                    // We've left the containers section
-                    break;
-                }
-                
-                // Look for image: field (should be at 4 spaces indentation, after "- name:")
-                if (trimmed.startsWith("image:")) {
-                    String image = trimmed.substring(6).trim();
-                    if (image.isEmpty()) {
-                        log.warn("extractImageFromSpecText: found 'image:' but value is empty at line {}", i + 1);
-                        continue;
-                    }
-                    
-                    // Remove quotes if present
-                    if ((image.startsWith("\"") && image.endsWith("\"")) ||
-                        (image.startsWith("'") && image.endsWith("'"))) {
-                        image = image.substring(1, image.length() - 1);
-                    }
-                    
-                    log.debug("extractImageFromSpecText: extracted image '{}' from line {}", image, i + 1);
-                    return image;
-                }
+            Map<String, Object> firstContainer = containers.get(0);
+            Object imageObj = firstContainer.get("image");
+            if (imageObj != null) {
+                String image = imageObj.toString();
+                log.debug("extractImageFromSpecText: extracted image '{}'", image);
+                return image;
             }
+        } catch (IOException e) {
+            log.warn("extractImageFromSpecText: failed to parse YAML: {}", e.getMessage());
         }
         
-        log.warn("extractImageFromSpecText: could not find 'image:' field in spec text ({} lines, inContainersSection={})", 
-                 lines.length, inContainersSection);
         return null;
     }
     
@@ -1305,8 +1928,14 @@ public class SpcsBackend extends AbstractContainerBackend {
     /**
      * Builds ExistingContainerInfo from metadata map containing all extracted service data.
      * Uses parseCommentAsRuntimeValues to automatically extract runtime values from comment (similar to Docker labels).
+     * When proxyStatus is ProxyStatus.Paused, recovery will show the app as paused and use resume flow.
+     * 
+     * @param containerId The container ID (UUID format)
+     * @param serviceName The service name (for constructing full service name)
+     * @param metadata Container metadata including image and runtime values
+     * @param proxyStatus Optional status for recovered proxy (e.g. Paused if service was suspended)
      */
-    private ExistingContainerInfo buildExistingContainerInfo(String serviceName, Map<String, String> metadata) {
+    private ExistingContainerInfo buildExistingContainerInfo(String containerId, String serviceName, Map<String, String> metadata, ProxyStatus proxyStatus) {
         // Full service name: database.schema.serviceName
         String fullServiceName = database + "." + schema + "." + serviceName;
         
@@ -1316,6 +1945,7 @@ public class SpcsBackend extends AbstractContainerBackend {
         
         // Parse runtime values from comment metadata (similar to Docker labels)
         // This automatically extracts all runtime values that were stored in the comment
+        // Note: PortMappingsKey may already be in metadata if extracted from containerPortMappings during container extraction
         Map<RuntimeValueKey<?>, RuntimeValue> runtimeValues = parseCommentAsRuntimeValues(serviceName, metadata);
         
         // Add/override special values that can't be stored in comment (they have includeAsLabel/includeAsAnnotation=false):
@@ -1331,6 +1961,18 @@ public class SpcsBackend extends AbstractContainerBackend {
             image = "";
         }
         runtimeValues.put(ContainerImageKey.inst, new RuntimeValue(ContainerImageKey.inst, image));
+        
+        // 2.5. PortMappingsKey - extracted from containerPortMappings map (if not already parsed)
+        // PortMappingsKey has includeAsAnnotation=true, but is container-specific, so stored per-container
+        String portMappingsJson = metadata.get(PortMappingsKey.inst.getKeyAsLabel());
+        if (portMappingsJson != null && !portMappingsJson.isEmpty() && !runtimeValues.containsKey(PortMappingsKey.inst)) {
+            try {
+                PortMappings portMappings = PortMappingsKey.inst.deserializeFromString(portMappingsJson);
+                runtimeValues.put(PortMappingsKey.inst, new RuntimeValue(PortMappingsKey.inst, portMappings));
+            } catch (Exception e) {
+                log.warn("Error deserializing PortMappingsKey for container {} in service {}: {}", containerId, serviceName, e.getMessage());
+            }
+        }
         
         // 3. Add Authorization header to HttpHeaders
         // Extract endpoint URL for authorization header (needed for keypair auth token exchange scope)
@@ -1364,28 +2006,41 @@ public class SpcsBackend extends AbstractContainerBackend {
         // Ports are exposed via SPCS service endpoints, not mapped to host ports
         Map<Integer, Integer> portBindings = new HashMap<>();
         
-        return new ExistingContainerInfo(serviceName, runtimeValues, image, portBindings);
+        if (proxyStatus != null) {
+            return new ExistingContainerInfo(containerId, runtimeValues, image, portBindings, proxyStatus);
+        }
+        return new ExistingContainerInfo(containerId, runtimeValues, image, portBindings);
     }
 
     @Override
     public boolean isProxyHealthy(Proxy proxy) {
+        // Same as recovery: PENDING or RUNNING = healthy; otherwise not. Not called when proxy status is Paused.
         for (Container container : proxy.getContainers()) {
             String fullServiceName = container.getRuntimeValue(BackendContainerNameKey.inst);
             if (fullServiceName == null) {
                 slog.warn(proxy, "SPCS container failed: service name not found");
                 return false;
             }
-
             String[] parts = fullServiceName.split("\\.");
             if (parts.length != 3) {
                 slog.warn(proxy, "SPCS container failed: invalid service name format");
                 return false;
             }
-            
-            // Extract service name (last part) and reuse checkServiceContainersAndRunningStatus
             String serviceName = parts[2];
-            if (!checkServiceContainersAndRunningStatus(serviceName)) {
-                slog.warn(proxy, "SPCS container failed: service unhealthy");
+            try {
+                Service service = snowflakeServiceAPI.fetchService(database, schema, serviceName);
+                String status = service != null ? service.getStatus() : null;
+                if (status == null) {
+                    slog.warn(proxy, "SPCS container failed: service status unknown");
+                    return false;
+                }
+                String statusUpper = status.toUpperCase(java.util.Locale.ROOT);
+                if (!"PENDING".equals(statusUpper) && !"RUNNING".equals(statusUpper)) {
+                    slog.warn(proxy, String.format("SPCS container not healthy: service status %s", status));
+                    return false;
+                }
+            } catch (ApiException e) {
+                slog.warn(proxy, String.format("SPCS container failed: error fetching service status: %s", e.getMessage()));
                 return false;
             }
         }
@@ -1536,9 +2191,13 @@ public class SpcsBackend extends AbstractContainerBackend {
                 }
                 
                 log.info("Proxy container DNS name: {}", serviceDnsName);
+                log.debug("calculateTarget: Service={}, DNS={}, Port={}, Path={}, Protocol={}", 
+                    fullServiceName, serviceDnsName, portMapping.getPort(), portMapping.getTargetPath(), getDefaultTargetProtocol());
                 
-                int targetPort = portMapping.getPort();            
-                return new URI(String.format("%s://%s:%s%s", getDefaultTargetProtocol(), serviceDnsName, targetPort, portMapping.getTargetPath()));
+                int targetPort = portMapping.getPort();
+                URI targetUri = new URI(String.format("%s://%s:%s%s", getDefaultTargetProtocol(), serviceDnsName, targetPort, portMapping.getTargetPath()));
+                log.debug("calculateTarget: Final target URI={}", targetUri);
+                return targetUri;
             } else {
                 // When running external to SPCS: use ingress URL (HTTPS) for communication
                 // Note: Public endpoints have protocol HTTP, but ingress URLs use HTTPS scheme
@@ -1564,6 +2223,10 @@ public class SpcsBackend extends AbstractContainerBackend {
                 
                 // Get ingress URL (should already be ready since we wait for endpoints during startup)
                 String ingressUrl = matchingEndpoint.getIngressUrl();
+                log.debug("calculateTarget: Service={}, Port={}, Found matching endpoint: port={}, public={}, protocol={}, ingressUrl={}", 
+                    fullServiceName, targetPort, matchingEndpoint.getPort(), matchingEndpoint.getIsPublic(), 
+                    matchingEndpoint.getProtocol(), ingressUrl);
+                
                 if (ingressUrl == null || ingressUrl.isEmpty()) {
                     throw new ContainerFailedToStartException("Ingress URL not available for port " + targetPort + " in service " + fullServiceName, null, container);
                 }
@@ -1576,14 +2239,21 @@ public class SpcsBackend extends AbstractContainerBackend {
                 
                 // Ingress URL format is typically: https://{endpoint}.snowflakecomputing.com
                 // Ensure it starts with https://
+                String originalIngressUrl = ingressUrl;
                 if (!ingressUrl.startsWith("https://") && !ingressUrl.startsWith("http://")) {
                     ingressUrl = "https://" + ingressUrl;
+                    log.debug("calculateTarget: Added https:// prefix to ingress URL: {} -> {}", originalIngressUrl, ingressUrl);
                 }
                 
                 // Validate and create URI
                 try {
                     // Append the target path if specified
-                    URI uri = new URI(ingressUrl + (portMapping.getTargetPath() != null ? portMapping.getTargetPath() : ""));
+                    String targetPath = portMapping.getTargetPath() != null ? portMapping.getTargetPath() : "";
+                    String fullUrl = ingressUrl + targetPath;
+                    log.debug("calculateTarget: Service={}, Final URL={} (ingressUrl={}, targetPath={})", 
+                        fullServiceName, fullUrl, ingressUrl, targetPath);
+                    URI uri = new URI(fullUrl);
+                    log.debug("calculateTarget: Final target URI={}", uri);
                     return uri;
                 } catch (java.net.URISyntaxException e) {
                     throw new ContainerFailedToStartException("Invalid ingress URL format for port " + targetPort + ": " + ingressUrl, e, container);
@@ -1633,7 +2303,7 @@ public class SpcsBackend extends AbstractContainerBackend {
             }
             String jwtToken = jwtTokenSupplier.get();
             try {
-                token = exchangeJwtForSnowflakeToken(jwtToken, endpointUrl);
+                token = keypairAuth.exchangeJwtForSnowflakeToken(jwtToken, endpointUrl);
                 if (token == null || token.isEmpty()) {
                     return null;
                 }
@@ -1673,218 +2343,65 @@ public class SpcsBackend extends AbstractContainerBackend {
     public boolean isRunningInsideSpcs() {
         return authMethod == AuthMethod.SPCS_SESSION_TOKEN;
     }
-
-
-    /**
-     * Generates a JWT token from the RSA private key for keypair authentication.
-     * The JWT is signed with RS256 algorithm and includes standard Snowflake claims.
-     * This method is called via supplier to allow automatic regeneration when tokens expire.
-     * 
-     * JWT Claims:
-     * - iss: {ACCOUNT}.{USERNAME}.{KEY_SHA256}
-     * - sub: {ACCOUNT}.{USERNAME}
-     * - exp: current time + 30 seconds (short-lived token)
-     * 
-     * @return The JWT token string
-     */
-    private String generateJwtTokenForKeypair() {
-        try {
-            // Read RSA private key
-            PrivateKey privateKey = loadPrivateKey(privateRsaKeyPath);
-            
-            // Use stored account identifier (convert hyphens to underscores for JWT claims)
-            String account = accountIdentifier.replace("-", "_");
-            
-            // Calculate SHA256 of public key for issuer claim
-            String keySha256 = calculatePublicKeySha256((RSAPrivateKey) privateKey);
-            
-            // Build issuer: {ACCOUNT}.{USERNAME}.{KEY_SHA256}
-            String issuer = account.toUpperCase() + "." + username.toUpperCase() + "." + keySha256;
-            
-            // Build subject: {ACCOUNT}.{USERNAME}
-            String subject = account.toUpperCase() + "." + username.toUpperCase();
-            
-            // Expiration: current time + 30 seconds
-            long now = System.currentTimeMillis() / 1000; // Unix timestamp in seconds
-            Date expiration = new Date((now + 30) * 1000);
-            
-            // Create JWT claims set
-            JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .issuer(issuer)
-                .subject(subject)
-                .expirationTime(expiration)
-                .build();
-            
-            // Create JWS header with RS256 algorithm
-            JWSHeader header = new JWSHeader(JWSAlgorithm.RS256);
-            
-            // Create signed JWT
-            SignedJWT signedJWT = new SignedJWT(header, claimsSet);
-            
-            // Sign the JWT
-            JWSSigner signer = new RSASSASigner(privateKey);
-            signedJWT.sign(signer);
-            
-            // Serialize to compact form
-            String jwt = signedJWT.serialize();
-            
-            log.debug("Generated JWT token for keypair authentication (iss: {}, sub: {})", issuer, subject);
-            return jwt;
-            
-        } catch (Exception e) {
-            log.error("Error generating JWT token for keypair authentication", e);
-            throw new RuntimeException("Failed to generate JWT token: " + e.getMessage(), e);
-        }
+    
+    private boolean getForceDeleteForService(String serviceName) {
+        return true;
     }
     
     /**
-     * Loads an RSA private key from a file path.
-     * Supports both PKCS#8 (-----BEGIN PRIVATE KEY-----) and PKCS#1 (-----BEGIN RSA PRIVATE KEY-----) formats.
+     * Deletes a Snowflake service, using SQL API for force deletion when needed.
+     * The REST API doesn't support force deletion, so we use SQL API when force=true.
      * 
-     * @param keyPath Path to the private key file
-     * @return The PrivateKey object
-     * @throws Exception If the key cannot be loaded or parsed
+     * @param database Database name
+     * @param schema Schema name
+     * @param serviceName Service name
+     * @param force If true, uses SQL API to execute DROP SERVICE ... FORCE. If false, uses REST API.
+     * @throws ApiException If the deletion fails
      */
-    private PrivateKey loadPrivateKey(String keyPath) throws Exception {
-        String keyContent = Files.readString(Paths.get(keyPath));
-        
-        // Remove header, footer, and whitespace
-        keyContent = keyContent
-            .replace("-----BEGIN PRIVATE KEY-----", "")
-            .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-            .replace("-----END PRIVATE KEY-----", "")
-            .replace("-----END RSA PRIVATE KEY-----", "")
-            .replaceAll("\\s", "");
-        
-        byte[] keyBytes = Base64.getDecoder().decode(keyContent);
-        
-        try {
-            // Try PKCS#8 format first (most common)
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-            return keyFactory.generatePrivate(keySpec);
-        } catch (Exception e) {
-            // If PKCS#8 fails, try PKCS#1 format
-            // PKCS#1 keys need to be converted to PKCS#8 format
-            // For simplicity, we'll throw an error suggesting conversion
-            throw new IllegalArgumentException("Unable to parse RSA private key. Please ensure the key is in PKCS#8 format (-----BEGIN PRIVATE KEY-----). " +
-                "If you have a PKCS#1 key (-----BEGIN RSA PRIVATE KEY-----), convert it using: openssl pkcs8 -topk8 -nocrypt -in key.pem -out key_pkcs8.pem", e);
-        }
-    }
-    
-    /**
-     * Calculates the SHA256 hash of the RSA public key.
-     * This is used in the issuer (iss) claim.
-     * 
-     * For RSA keys, the public key consists of modulus and public exponent.
-     * The standard public exponent is 65537 (0x10001), which is used for most RSA keys.
-     * 
-     * @param privateKey The RSA private key
-     * @return The SHA256 hash as a hexadecimal string (uppercase)
-     * @throws Exception If the hash cannot be calculated
-     */
-    private String calculatePublicKeySha256(RSAPrivateKey privateKey) throws Exception {
-        // Use standard RSA public exponent (65537 = 0x10001)
-        // This is the most common value for RSA keys
-        java.math.BigInteger publicExponent = new java.math.BigInteger("65537");
-        
-        // Create public key specification using modulus and public exponent
-        RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(privateKey.getModulus(), publicExponent);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
-        
-        // Get the DER-encoded public key
-        byte[] publicKeyBytes = publicKey.getEncoded();
-        
-        // Calculate SHA256 hash
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hash = digest.digest(publicKeyBytes);
-        
-        // Convert to hexadecimal string (uppercase)
-        StringBuilder hexString = new StringBuilder();
-        for (byte b : hash) {
-            String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) {
-                hexString.append('0');
-            }
-            hexString.append(hex);
-        }
-        return hexString.toString().toUpperCase();
-    }
-    
-
-    /**
-     * Exchanges a JWT (key-pair) token for a Snowflake OAuth token.
-     * This is required when forwarding HTTPS requests via ingress with key-pair authentication.
-     * 
-     * Implementation note: This requires JWT encoding with RS256 algorithm and OAuth token exchange.
-     * Reference: https://medium.com/@vladimir.timofeenko/hands-on-with-spcs-container-networking-b347866279f9
-     * 
-     * @param jwtToken The JWT token to exchange
-     * @param endpointUrl Optional SPCS endpoint URL for the scope. If null, uses account URL.
-     * @return The Snowflake OAuth token
-     * @throws IOException If token exchange fails
-     */
-    private String exchangeJwtForSnowflakeToken(String jwtToken, String endpointUrl) throws IOException {
-        try {
-            // Build OAuth token endpoint URL
-            String oauthTokenUrl = accountUrl + "/oauth/token";
+    private void deleteServiceWithForce(String database, String schema, String serviceName, boolean force) throws ApiException {
+        if (force) {
+            // Use SQL API to execute DROP SERVICE ... FORCE
+            // The REST API doesn't support force deletion
+            String sql = String.format("DROP SERVICE %s.%s.%s FORCE", 
+                escapeSqlIdentifier(database), 
+                escapeSqlIdentifier(schema), 
+                escapeSqlIdentifier(serviceName));
             
-            // Build scope - format: session:role:{role} {endpointUrl} or just {endpointUrl}
-            // For now, if endpointUrl is provided, use it; otherwise use account URL
-            String scope = endpointUrl != null ? endpointUrl : accountUrl;
+            SubmitStatementRequest request = new SubmitStatementRequest();
+            request.setStatement(sql);
+            // Don't set warehouse - service deletion doesn't require a warehouse
             
-            // Build form-encoded request body
-            StringBuilder formData = new StringBuilder();
-            formData.append("grant_type=").append(URLEncoder.encode("urn:ietf:params:oauth:grant-type:jwt-bearer", StandardCharsets.UTF_8));
-            formData.append("&scope=").append(URLEncoder.encode(scope, StandardCharsets.UTF_8));
-            formData.append("&assertion=").append(URLEncoder.encode(jwtToken, StandardCharsets.UTF_8));
-            
-            // Create HTTP request
-            RequestBody requestBody = RequestBody.create(
-                formData.toString(),
-                MediaType.parse("application/x-www-form-urlencoded")
-            );
-            
-            Request request = new Request.Builder()
-                .url(oauthTokenUrl)
-                .post(requestBody)
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .build();
-            
-            // Execute request using OkHttpClient
-            OkHttpClient httpClient = new OkHttpClient();
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "No error body";
-                    throw new IOException("OAuth token exchange failed with status " + response.code() + ": " + errorBody);
-                }
-                
-                if (response.body() == null) {
-                    throw new IOException("OAuth token exchange returned empty response");
-                }
-                
-                // Parse JSON response to extract access_token
-                String responseBody = response.body().string();
-                // Format: {"access_token":"...","token_type":"Bearer","expires_in":3600}
-                try {
-                    com.google.gson.JsonObject jsonResponse = com.google.gson.JsonParser.parseString(responseBody).getAsJsonObject();
-                    if (!jsonResponse.has("access_token")) {
-                        throw new IOException("OAuth token exchange response does not contain access_token: " + responseBody);
-                    }
-                    String oauthToken = jsonResponse.get("access_token").getAsString();
-                    log.debug("Successfully exchanged JWT for Snowflake OAuth token (scope: {})", scope);
-                    return oauthToken;
-                } catch (com.google.gson.JsonSyntaxException e) {
-                    throw new IOException("OAuth token exchange response is not valid JSON: " + responseBody, e);
-                }
-            }
-        } catch (Exception e) {
-            if (e instanceof IOException) {
+            try {
+                snowflakeStatementsAPI.submitStatement(
+                    "ContainerProxy/1.0", // userAgent
+                    request,
+                    null, // requestId
+                    false, // async
+                    false, // nullable
+                    null, // accept
+                    snowflakeTokenType // xSnowflakeAuthorizationTokenType - use the same token type as configured for REST API
+                );
+                log.debug("Successfully force deleted service {}.{}.{} using SQL API", database, schema, serviceName);
+            } catch (ApiException e) {
+                log.warn("Failed to force delete service {}.{}.{} using SQL API: {}", database, schema, serviceName, e.getMessage());
                 throw e;
             }
-            throw new IOException("Error exchanging JWT for Snowflake OAuth token: " + e.getMessage(), e);
+        } else {
+            // Use REST API for normal deletion
+            snowflakeServiceAPI.deleteService(database, schema, serviceName, false);
         }
+    }
+    
+    /**
+     * Escapes a SQL identifier by wrapping it in double quotes if needed.
+     * Simple implementation - just wraps in double quotes for safety.
+     */
+    private String escapeSqlIdentifier(String identifier) {
+        if (identifier == null || identifier.isEmpty()) {
+            return "\"\"";
+        }
+        // Replace any double quotes with escaped double quotes
+        return "\"" + identifier.replace("\"", "\"\"") + "\"";
     }
 
     /**

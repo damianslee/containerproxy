@@ -83,8 +83,9 @@ public class SpcsAuthenticationBackend implements IAuthenticationBackend {
 
         logger.info("Initializing SPCS authentication backend (SNOWFLAKE_SERVICE_NAME: {})", snowflakeServiceName);
 
-        // Create authentication provider and filter
-        ProviderManager providerManager = new ProviderManager(new SpcsAuthenticationProvider(environment));
+        // Create authentication provider
+        SpcsAuthenticationProvider provider = new SpcsAuthenticationProvider(environment);
+        ProviderManager providerManager = new ProviderManager(provider);
         filter = new SpcsAuthenticationFilter(providerManager, applicationEventPublisher);
     }
 

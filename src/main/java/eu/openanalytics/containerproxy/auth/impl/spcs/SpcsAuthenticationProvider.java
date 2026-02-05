@@ -20,6 +20,8 @@
  */
 package eu.openanalytics.containerproxy.auth.impl.spcs;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.openanalytics.containerproxy.backend.spcs.client.ApiClient;
 import eu.openanalytics.containerproxy.backend.spcs.client.ApiException;
 import eu.openanalytics.containerproxy.backend.spcs.client.api.StatementsApi;
@@ -34,48 +36,30 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class SpcsAuthenticationProvider implements AuthenticationProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(SpcsAuthenticationProvider.class);
     private static final String USER_AGENT = "ContainerProxy/1.2.2";
+    
+    private final ObjectMapper jsonMapper = new ObjectMapper();
 
-    private final Set<String> adminGroups;
     private final Environment environment;
     private final String computeWarehouse;
 
     public SpcsAuthenticationProvider(Environment environment) {
         this.environment = environment;
-        // Load admin groups from environment (same logic as UserService.init())
-        this.adminGroups = new HashSet<>();
         
-        // Support for old, non-array notation
-        String singleGroup = environment.getProperty("proxy.admin-groups");
-        if (singleGroup != null && !singleGroup.isEmpty()) {
-            adminGroups.add(singleGroup.toUpperCase());
-        }
-
-        for (int i = 0; ; i++) {
-            String groupName = environment.getProperty(String.format("proxy.admin-groups[%s]", i));
-            if (groupName == null || groupName.isEmpty()) {
-                break;
-            }
-            adminGroups.add(groupName.toUpperCase());
-        }
-        
-        // Load optional compute warehouse for SPCS authentication admin check
+        // Load optional compute warehouse for SPCS authentication role retrieval
         this.computeWarehouse = environment.getProperty("proxy.spcs.compute-warehouse");
         if (computeWarehouse != null && !computeWarehouse.isEmpty()) {
-            logger.debug("SPCS compute warehouse configured for admin role validation: {}", computeWarehouse);
+            logger.debug("SPCS compute warehouse configured for role retrieval: {}", computeWarehouse);
         }
     }
 
@@ -88,22 +72,23 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
             
             Collection<GrantedAuthority> authorities = new ArrayList<>();
             
-            // Check conditions that would skip admin role validation (guard clauses)
-            if (adminGroups.isEmpty()) {
-                logger.debug("No admin groups configured, skipping admin role check");
-            } else if (computeWarehouse == null || computeWarehouse.isEmpty()) {
-                logger.debug("Compute warehouse not configured (proxy.spcs.compute-warehouse), skipping admin role check");
+            // Retrieve all available roles for the user using CURRENT_AVAILABLE_ROLES()
+            // This stores roles with the principal, allowing authorization logic to check both:
+            // - admin-groups: via UserService.isAdmin() which uses isMember() to check authorities
+            // - access-groups: via AccessControlEvaluationService which checks authorities against proxy spec access-groups
+            if (computeWarehouse == null || computeWarehouse.isEmpty()) {
+                logger.debug("Compute warehouse not configured (proxy.spcs.compute-warehouse), skipping role retrieval");
             } else if (spcsIngressUserToken == null || spcsIngressUserToken.isBlank()) {
-                logger.debug("User token not available (executeAsCaller may not be enabled), skipping admin role check");
+                logger.debug("User token not available (executeAsCaller may not be enabled), skipping role retrieval");
             } else {
-                // All conditions met: perform admin role validation
-                // Requires: user token, admin groups, and compute warehouse
-                logger.debug("User token available, checking admin roles for {} admin groups using warehouse {}", adminGroups.size(), computeWarehouse);
-                Set<String> userAdminGroups = validateAdminRoles(spcsIngressUserToken);
-                logger.debug("User has {} admin roles out of {} configured", userAdminGroups.size(), adminGroups.size());
-                for (String adminGroup : userAdminGroups) {
-                    // Format: ROLE_GROUPNAME (UserService.getGroups() strips the "ROLE_" prefix)
-                    String roleName = adminGroup.startsWith("ROLE_") ? adminGroup : "ROLE_" + adminGroup;
+                // All conditions met: retrieve available roles
+                // Requires: user token and compute warehouse
+                logger.debug("User token available, retrieving available roles using warehouse {}", computeWarehouse);
+                List<String> availableRoles = getAvailableRoles(spcsIngressUserToken);
+                logger.debug("User has {} available roles", availableRoles.size());
+                for (String role : availableRoles) {
+                    // Format: ROLE_ROLENAME (UserService.getGroups() strips the "ROLE_" prefix)
+                    String roleName = role.startsWith("ROLE_") ? role : "ROLE_" + role;
                     authorities.add(new SimpleGrantedAuthority(roleName));
                 }
             }
@@ -121,25 +106,21 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
     }
 
     /**
-     * Validates which admin roles the user has by calling IS_ROLE_IN_SESSION() for all admin groups in a single SQL query.
+     * Retrieves all available roles for the user using CURRENT_AVAILABLE_ROLES().
      * Uses the Sf-Context-Current-User-Token to authenticate as the caller.
      * 
      * @param userToken The Sf-Context-Current-User-Token
-     * @return Set of admin group names that the user has in their session
+     * @return List of role names available to the user (may be empty)
      */
-    private Set<String> validateAdminRoles(String userToken) {
-        Set<String> userAdminGroups = new HashSet<>();
-        
-        if (adminGroups.isEmpty()) {
-            return userAdminGroups;
-        }
+    private List<String> getAvailableRoles(String userToken) {
+        List<String> availableRoles = new ArrayList<>();
         
         try {
             // Get account URL from environment
             String accountUrl = getAccountUrl();
             if (accountUrl == null) {
-                logger.warn("Cannot validate admin roles: account URL not available");
-                return userAdminGroups;
+                logger.warn("Cannot retrieve available roles: account URL not available");
+                return availableRoles;
             }
             
             // Create a new API client instance (not shared) with user token as bearer token
@@ -153,38 +134,27 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
             // Read service OAuth token from file and combine with user token
             String serviceToken = readSpcsSessionTokenFromFile();
             if (serviceToken == null || serviceToken.isEmpty()) {
-                logger.warn("Service OAuth token not available from file for admin role validation");
-                return userAdminGroups;
+                logger.warn("Service OAuth token not available from file for role retrieval");
+                return availableRoles;
             }
             
             // Format: <service-oauth-token>.<Sf-Context-Current-User-Token>
             String combinedToken = serviceToken + "." + userToken;           
             bearerAuth.setBearerToken(combinedToken);
             
-            // using SQL statement endpoint.  there maybe a REST API for this in the future.
+            // Using SQL statement endpoint to query CURRENT_AVAILABLE_ROLES()
             StatementsApi statementsApi = new StatementsApi(apiClient);
             
-            // Build a single SQL query with one column per admin group using IS_ROLE_IN_SESSION()
-            // Example: SELECT IS_ROLE_IN_SESSION('ROLE1') AS role1, IS_ROLE_IN_SESSION('ROLE2') AS role2, ...
-            StringBuilder sqlBuilder = new StringBuilder("SELECT ");
-            List<String> adminGroupList = new ArrayList<>(adminGroups);
-            for (int i = 0; i < adminGroupList.size(); i++) {
-                if (i > 0) {
-                    sqlBuilder.append(", ");
-                }
-                String adminGroup = adminGroupList.get(i).toUpperCase();
-                sqlBuilder.append("IS_ROLE_IN_SESSION('").append(escapeSqlString(adminGroup)).append("') AS role_").append(i);
-            }
-            String sql = sqlBuilder.toString();
+            // Query CURRENT_AVAILABLE_ROLES() which returns a JSON array of role names
+            String sql = "SELECT CURRENT_AVAILABLE_ROLES() AS available_roles";
             
-            // Prepare request outside try so it is available in catch/retry
+            // Prepare request
             SubmitStatementRequest request = new SubmitStatementRequest();
             request.setStatement(sql);
             // Set warehouse for SQL execution
             request.setWarehouse(computeWarehouse.toUpperCase());
             
             try {
-                
                 ResultSet result = statementsApi.submitStatement(
                     USER_AGENT,
                     request,
@@ -195,39 +165,45 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
                     "OAUTH" // xSnowflakeAuthorizationTokenType: OAuth token from SPCS ingress
                 );
                 
-                // Parse result: Each column contains TRUE or FALSE for the corresponding admin group
-                // ResultSet.data is List<List<String>>, first row contains all the boolean values
+                // Parse result: CURRENT_AVAILABLE_ROLES() returns a JSON array string
+                // ResultSet.data is List<List<String>>, first row, first column contains the JSON array
                 if (result.getData() != null && !result.getData().isEmpty()) {
                     List<String> firstRow = result.getData().get(0);
-                    if (firstRow != null && firstRow.size() == adminGroupList.size()) {
-                        for (int i = 0; i < firstRow.size(); i++) {
-                            String value = firstRow.get(i);
-                            // Snowflake returns "true" or "false" as strings
-                            if ("true".equalsIgnoreCase(value) || "TRUE".equals(value)) {
-                                String adminGroup = adminGroupList.get(i);
-                                userAdminGroups.add(adminGroup);
-                                logger.debug("User has admin role: {}", adminGroup);
+                    if (firstRow != null && !firstRow.isEmpty()) {
+                        String jsonArrayString = firstRow.get(0);
+                        if (jsonArrayString != null && !jsonArrayString.isEmpty()) {
+                            // Parse JSON array: ["ROLE1", "ROLE2", "ROLE3"]
+                            List<String> roles = jsonMapper.readValue(jsonArrayString, new TypeReference<List<String>>() {});
+                            if (roles != null) {
+                                for (String role : roles) {
+                                    if (role != null && !role.isEmpty()) {
+                                        availableRoles.add(role.toUpperCase());
+                                    }
+                                }
+                                logger.debug("Retrieved {} available roles from CURRENT_AVAILABLE_ROLES()", availableRoles.size());
                             }
                         }
-                    } else {
-                        logger.warn("Unexpected result format: expected {} columns but got {}", 
-                            adminGroupList.size(), firstRow != null ? firstRow.size() : 0);
                     }
                 }
             } catch (ApiException e) {
                 // Log error details: exception includes message and stack trace
-                logger.warn("Failed to check admin roles (user will not have admin privileges): code={}", 
+                logger.warn("Failed to retrieve available roles (user will not have role-based privileges): code={}", 
                     e.getCode(), e);
-                // Return empty admin groups on failure (no fallback)
-                return userAdminGroups;
+                // Return empty roles on failure (no fallback)
+                return availableRoles;
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                logger.warn("Failed to parse available roles JSON (user will not have role-based privileges): {}", 
+                    e.getMessage(), e);
+                // Return empty roles on JSON parsing failure
+                return availableRoles;
             }
         } catch (Exception e) {
-            logger.error("Error validating admin roles: {}", e.getMessage(), e);
-            // Return empty admin groups on exception (no fallback)
-            return userAdminGroups;
+            logger.error("Error retrieving available roles: {}", e.getMessage(), e);
+            // Return empty roles on exception (no fallback)
+            return availableRoles;
         }
         
-        return userAdminGroups;
+        return availableRoles;
     }
     
     /**
@@ -276,17 +252,6 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
         return null;
     }
     
-    /**
-     * Escapes single quotes in SQL string literals.
-     * 
-     * @param value The string value to escape
-     * @return Escaped string safe for use in SQL string literal
-     */
-    private String escapeSqlString(String value) {
-        // Escape single quotes by doubling them: ' -> ''
-        return value.replace("'", "''");
-    }
-
     @Override
     public boolean supports(Class<?> authentication) {
         return SpcsAuthenticationToken.class.isAssignableFrom(authentication);

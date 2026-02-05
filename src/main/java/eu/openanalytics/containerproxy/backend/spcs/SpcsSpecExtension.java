@@ -52,8 +52,22 @@ public class SpcsSpecExtension extends AbstractSpecExtension {
     @Builder.Default
     SpelField.String spcsSchema = new SpelField.String();
 
+    /**
+     * Volumes for the SPCS service (defined at spec level; one service per proxy).
+     */
     @Builder.Default
-    SpelField.StringList spcsExternalAccessIntegrations = new SpelField.StringList();
+    java.util.List<SpcsVolume> spcsVolumes = new java.util.ArrayList<>();
+    
+    /**
+     * External access integrations for the SPCS service.
+     */
+    @Builder.Default
+    java.util.List<String> spcsExternalAccessIntegrations = new java.util.ArrayList<>();
+    
+    @Builder.Default
+    java.util.List<SpcsSecret> spcsSecrets = new java.util.ArrayList<>();
+    
+    SpcsReadinessProbe spcsReadinessProbe;
 
     @Override
     public ISpecExtension firstResolve(SpecExpressionResolver resolver, SpecExpressionContext context) {
@@ -61,7 +75,6 @@ public class SpcsSpecExtension extends AbstractSpecExtension {
             .spcsComputePool(spcsComputePool.resolve(resolver, context))
             .spcsDatabase(spcsDatabase.resolve(resolver, context))
             .spcsSchema(spcsSchema.resolve(resolver, context))
-            .spcsExternalAccessIntegrations(spcsExternalAccessIntegrations.resolve(resolver, context))
             .build();
     }
 
