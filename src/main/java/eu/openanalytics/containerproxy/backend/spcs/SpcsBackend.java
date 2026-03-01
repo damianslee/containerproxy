@@ -98,6 +98,7 @@ public class SpcsBackend extends AbstractContainerBackend {
     private static final String PROPERTY_SCHEMA = "schema";
     private static final String PROPERTY_COMPUTE_POOL = "compute-pool";
     private static final String PROPERTY_SERVICE_WAIT_TIME = "service-wait-time";
+    private static final String PROPERTY_USE_ROLE = "use-role";
 
     private ServiceApi snowflakeServiceAPI;
     private StatementsApi snowflakeStatementsAPI;
@@ -239,25 +240,29 @@ public class SpcsBackend extends AbstractContainerBackend {
             accountUrl = String.format("https://%s.snowflakecomputing.com", accountIdentifier);
         }
         
-        // Use database and schema from environment variables (available when running inside SPCS)
-        if (snowflakeDatabase != null && !snowflakeDatabase.isEmpty()) {
+        // Database and schema: application yaml config overrides environment variables (when running inside SPCS)
+        database = getProperty(PROPERTY_DATABASE);
+        if (database == null || database.isEmpty()) {
             database = snowflakeDatabase;
-            log.info("Using database from SNOWFLAKE_DATABASE environment variable: {}", database);
-        } else {
-            database = getProperty(PROPERTY_DATABASE);
-            if (database == null) {
+            if (database != null && !database.isEmpty()) {
+                log.info("Using database from SNOWFLAKE_DATABASE environment variable: {}", database);
+            } else {
                 throw new IllegalStateException("Error in configuration of SPCS backend: SNOWFLAKE_DATABASE not set and proxy.spcs.database not configured");
             }
+        } else {
+            log.info("Using database from configuration: {} (SNOWFLAKE_DATABASE was: {})", database, snowflakeDatabase);
         }
         
-        if (snowflakeSchema != null && !snowflakeSchema.isEmpty()) {
+        schema = getProperty(PROPERTY_SCHEMA);
+        if (schema == null || schema.isEmpty()) {
             schema = snowflakeSchema;
-            log.info("Using schema from SNOWFLAKE_SCHEMA environment variable: {}", schema);
-        } else {
-            schema = getProperty(PROPERTY_SCHEMA);
-            if (schema == null) {
+            if (schema != null && !schema.isEmpty()) {
+                log.info("Using schema from SNOWFLAKE_SCHEMA environment variable: {}", schema);
+            } else {
                 throw new IllegalStateException("Error in configuration of SPCS backend: SNOWFLAKE_SCHEMA not set and proxy.spcs.schema not configured");
             }
+        } else {
+            log.info("Using schema from configuration: {} (SNOWFLAKE_SCHEMA was: {})", schema, snowflakeSchema);
         }
         
         // Compute pool: use configured value if set, otherwise use SNOWFLAKE_COMPUTE_POOL
@@ -359,10 +364,10 @@ public class SpcsBackend extends AbstractContainerBackend {
             HttpBearerAuth bearerAuth = (HttpBearerAuth) snowflakeAPIClient.getAuthentication("KeyPair");
             
             // Set bearer token using supplier (allows automatic refresh)
-                // For keypair: use supplier to generate JWT tokens on-demand (auto-refreshes on expiry)
-                // For SPCS session token: use supplier to read token fresh on each request (allows SPCS auto-refresh)
-                // For PAT: use supplier for consistency and to support future token rotation
-                bearerAuth.setBearerToken(jwtTokenSupplier);
+            // For keypair: use supplier to generate JWT tokens on-demand (auto-refreshes on expiry)
+            // For SPCS session token: use supplier to read token fresh on each request (allows SPCS auto-refresh)
+            // For PAT: use supplier for consistency and to support future token rotation
+            bearerAuth.setBearerToken(jwtTokenSupplier);
             
             // Set X-Snowflake-Authorization-Token-Type header
             // This helps snowflake identify the token type and useful in logs for debugging
@@ -376,6 +381,12 @@ public class SpcsBackend extends AbstractContainerBackend {
                 throw new IllegalStateException("Unknown authentication method: " + authMethod);
             }
             snowflakeAPIClient.addDefaultHeader("X-Snowflake-Authorization-Token-Type", snowflakeTokenType);
+
+            String useRole = getProperty(PROPERTY_USE_ROLE);
+            if (useRole != null && !useRole.isBlank()) {
+                snowflakeAPIClient.addDefaultHeader("X-Snowflake-Role", useRole.trim());
+                log.info("SPCS REST API will use role: {}", useRole.trim());
+            }
 
             snowflakeServiceAPI = new ServiceApi(snowflakeAPIClient);
             snowflakeStatementsAPI = new StatementsApi(snowflakeAPIClient);

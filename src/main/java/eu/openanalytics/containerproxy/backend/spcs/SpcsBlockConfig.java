@@ -20,6 +20,8 @@
  */
 package eu.openanalytics.containerproxy.backend.spcs;
 
+import eu.openanalytics.containerproxy.spec.expression.SpecExpressionContext;
+import eu.openanalytics.containerproxy.spec.expression.SpecExpressionResolver;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,9 +36,9 @@ import lombok.Setter;
  * Reference: https://docs.snowflake.com/en/developer-guide/snowpark-container-services/specification-reference
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder(toBuilder = true)
+@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SpcsBlockConfig {
     
     /**
@@ -98,6 +100,23 @@ public class SpcsBlockConfig {
      */
     private Boolean snapshotOnDelete;
     
+    public SpcsBlockConfig resolve(SpecExpressionResolver resolver, SpecExpressionContext context) {
+        SpcsBlockInitialContents resolvedInitialContents = null;
+        if (initialContents != null) {
+            String resolvedFromSnapshot = initialContents.getFromSnapshot() == null
+                ? null
+                : resolver.evaluateToString(initialContents.getFromSnapshot(), context);
+            resolvedInitialContents = SpcsBlockInitialContents.builder()
+                .fromSnapshot(resolvedFromSnapshot)
+                .build();
+        }
+        return toBuilder()
+            .throughput(throughput == null ? null : resolver.evaluateToString(throughput, context))
+            .encryption(encryption == null ? null : resolver.evaluateToString(encryption, context))
+            .initialContents(resolvedInitialContents)
+            .build();
+    }
+
     /**
      * Initial contents configuration.
      */

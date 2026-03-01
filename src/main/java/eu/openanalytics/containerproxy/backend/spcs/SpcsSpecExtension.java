@@ -75,6 +75,21 @@ public class SpcsSpecExtension extends AbstractSpecExtension {
             .spcsComputePool(spcsComputePool.resolve(resolver, context))
             .spcsDatabase(spcsDatabase.resolve(resolver, context))
             .spcsSchema(spcsSchema.resolve(resolver, context))
+            .spcsExternalAccessIntegrations(
+                spcsExternalAccessIntegrations != null
+                    ? spcsExternalAccessIntegrations.stream()
+                        .map(s -> resolver.evaluateToString(s, context))
+                        .toList()
+                    : null)
+            .spcsVolumes(spcsVolumes != null
+                ? spcsVolumes.stream().map(v -> v.resolve(resolver, context)).toList()
+                : null)
+            .spcsSecrets(spcsSecrets != null
+                ? spcsSecrets.stream().map(s -> s.resolve(resolver, context)).toList()
+                : null)
+            .spcsReadinessProbe(spcsReadinessProbe != null
+                ? spcsReadinessProbe.resolve(resolver, context)
+                : null)
             .build();
     }
 

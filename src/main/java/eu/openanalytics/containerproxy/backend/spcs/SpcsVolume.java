@@ -22,6 +22,9 @@
  */
 package eu.openanalytics.containerproxy.backend.spcs;
 
+import eu.openanalytics.containerproxy.spec.expression.SpecExpressionContext;
+import eu.openanalytics.containerproxy.spec.expression.SpecExpressionResolver;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,9 +38,9 @@ import lombok.NoArgsConstructor;
  * Reference: https://docs.snowflake.com/en/developer-guide/snowpark-container-services/specification-reference
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder(toBuilder = true)
+@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SpcsVolume {
     
     /**
@@ -75,4 +78,16 @@ public class SpcsVolume {
      * Stage configuration (optional, for stage volumes).
      */
     private SpcsStageConfig stageConfig;
+
+    public SpcsVolume resolve(SpecExpressionResolver resolver, SpecExpressionContext context) {
+        return toBuilder()
+            .name(name == null ? null : resolver.evaluateToString(name, context))
+            .source(source == null ? null : resolver.evaluateToString(source, context))
+            .size(size == null ? null : resolver.evaluateToString(size, context))
+            .uid(uid == null ? null : resolver.evaluateToInteger(String.valueOf(uid), context))
+            .gid(gid == null ? null : resolver.evaluateToInteger(String.valueOf(gid), context))
+            .blockConfig(blockConfig == null ? null : blockConfig.resolve(resolver, context))
+            .stageConfig(stageConfig == null ? null : stageConfig.resolve(resolver, context))
+            .build();
+    }
 }

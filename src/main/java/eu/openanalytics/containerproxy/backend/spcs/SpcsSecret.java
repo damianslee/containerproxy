@@ -20,6 +20,9 @@
  */
 package eu.openanalytics.containerproxy.backend.spcs;
 
+import eu.openanalytics.containerproxy.spec.expression.SpecExpressionContext;
+import eu.openanalytics.containerproxy.spec.expression.SpecExpressionResolver;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,9 +35,9 @@ import lombok.NoArgsConstructor;
  * When using envVarName, secretKeyRef specifies which key from the secret to use.
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder(toBuilder = true)
+@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SpcsSecret {
     
     /**
@@ -62,4 +65,14 @@ public class SpcsSecret {
      * Valid values: "username", "password", "secret_string"
      */
     private String secretKeyRef;
+
+    public SpcsSecret resolve(SpecExpressionResolver resolver, SpecExpressionContext context) {
+        return toBuilder()
+            .objectName(objectName == null ? null : resolver.evaluateToString(objectName, context))
+            .objectReference(objectReference == null ? null : resolver.evaluateToString(objectReference, context))
+            .directoryPath(directoryPath == null ? null : resolver.evaluateToString(directoryPath, context))
+            .envVarName(envVarName == null ? null : resolver.evaluateToString(envVarName, context))
+            .secretKeyRef(secretKeyRef == null ? null : resolver.evaluateToString(secretKeyRef, context))
+            .build();
+    }
 }

@@ -20,6 +20,9 @@
  */
 package eu.openanalytics.containerproxy.backend.spcs;
 
+import eu.openanalytics.containerproxy.spec.expression.SpecExpressionContext;
+import eu.openanalytics.containerproxy.spec.expression.SpecExpressionResolver;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,9 +34,9 @@ import lombok.NoArgsConstructor;
  * Reference: https://docs.snowflake.com/en/developer-guide/snowpark-container-services/specification-reference
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder(toBuilder = true)
+@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SpcsStageConfig {
     
     /**
@@ -50,6 +53,35 @@ public class SpcsStageConfig {
      * Resource requests and limits for the stage volume.
      */
     private SpcsStageResources resources;
+
+    public SpcsStageConfig resolve(SpecExpressionResolver resolver, SpecExpressionContext context) {
+        SpcsStageResources resolvedResources = null;
+        if (resources != null) {
+            SpcsResourceRequests resolvedRequests = null;
+            if (resources.getRequests() != null) {
+                resolvedRequests = SpcsResourceRequests.builder()
+                    .memory(resources.getRequests().getMemory() == null ? null : resolver.evaluateToString(resources.getRequests().getMemory(), context))
+                    .cpu(resources.getRequests().getCpu() == null ? null : resolver.evaluateToString(resources.getRequests().getCpu(), context))
+                    .build();
+            }
+            SpcsResourceLimits resolvedLimits = null;
+            if (resources.getLimits() != null) {
+                resolvedLimits = SpcsResourceLimits.builder()
+                    .memory(resources.getLimits().getMemory() == null ? null : resolver.evaluateToString(resources.getLimits().getMemory(), context))
+                    .cpu(resources.getLimits().getCpu() == null ? null : resolver.evaluateToString(resources.getLimits().getCpu(), context))
+                    .build();
+            }
+            resolvedResources = SpcsStageResources.builder()
+                .requests(resolvedRequests)
+                .limits(resolvedLimits)
+                .build();
+        }
+        return toBuilder()
+            .name(name == null ? null : resolver.evaluateToString(name, context))
+            .metadataCache(metadataCache == null ? null : resolver.evaluateToString(metadataCache, context))
+            .resources(resolvedResources)
+            .build();
+    }
     
     /**
      * Resource configuration for stage volumes.

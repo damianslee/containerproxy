@@ -20,6 +20,9 @@
  */
 package eu.openanalytics.containerproxy.backend.spcs;
 
+import eu.openanalytics.containerproxy.spec.expression.SpecExpressionContext;
+import eu.openanalytics.containerproxy.spec.expression.SpecExpressionResolver;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,9 +35,9 @@ import lombok.NoArgsConstructor;
  * It checks an HTTP endpoint on the specified port and path.
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder(toBuilder = true)
+@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SpcsReadinessProbe {
     
     /**
@@ -46,4 +49,11 @@ public class SpcsReadinessProbe {
      * The HTTP path to probe.
      */
     private String path;
+
+    public SpcsReadinessProbe resolve(SpecExpressionResolver resolver, SpecExpressionContext context) {
+        return toBuilder()
+            .port(port == null ? null : resolver.evaluateToInteger(String.valueOf(port), context))
+            .path(path == null ? null : resolver.evaluateToString(path, context))
+            .build();
+    }
 }
