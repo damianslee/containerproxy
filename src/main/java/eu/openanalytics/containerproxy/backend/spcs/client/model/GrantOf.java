@@ -26,33 +26,24 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
- * ServiceRoleGrantTo
+ * GrantOf
  */
 @JsonPropertyOrder({
-  ServiceRoleGrantTo.JSON_PROPERTY_CREATED_ON,
-  ServiceRoleGrantTo.JSON_PROPERTY_PRIVILEGE,
-  ServiceRoleGrantTo.JSON_PROPERTY_GRANTED_ON,
-  ServiceRoleGrantTo.JSON_PROPERTY_NAME,
-  ServiceRoleGrantTo.JSON_PROPERTY_GRANTED_TO,
-  ServiceRoleGrantTo.JSON_PROPERTY_GRANTEE_NAME
+  GrantOf.JSON_PROPERTY_CREATED_ON,
+  GrantOf.JSON_PROPERTY_ROLE,
+  GrantOf.JSON_PROPERTY_GRANTED_TO,
+  GrantOf.JSON_PROPERTY_GRANTEE_NAME,
+  GrantOf.JSON_PROPERTY_GRANTED_BY
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:25.529847700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
-public class ServiceRoleGrantTo {
+public class GrantOf {
   public static final String JSON_PROPERTY_CREATED_ON = "created_on";
   @javax.annotation.Nullable
   private OffsetDateTime createdOn;
 
-  public static final String JSON_PROPERTY_PRIVILEGE = "privilege";
+  public static final String JSON_PROPERTY_ROLE = "role";
   @javax.annotation.Nullable
-  private String privilege;
-
-  public static final String JSON_PROPERTY_GRANTED_ON = "granted_on";
-  @javax.annotation.Nullable
-  private String grantedOn;
-
-  public static final String JSON_PROPERTY_NAME = "name";
-  @javax.annotation.Nullable
-  private String name;
+  private String role;
 
   public static final String JSON_PROPERTY_GRANTED_TO = "granted_to";
   @javax.annotation.Nullable
@@ -62,27 +53,29 @@ public class ServiceRoleGrantTo {
   @javax.annotation.Nullable
   private String granteeName;
 
-  public ServiceRoleGrantTo() {
+  public static final String JSON_PROPERTY_GRANTED_BY = "granted_by";
+  @javax.annotation.Nullable
+  private String grantedBy;
+
+  public GrantOf() {
   }
   /**
    * Constructor with only readonly parameters
    */
   @JsonCreator
-  public ServiceRoleGrantTo(
+  public GrantOf(
     @JsonProperty(JSON_PROPERTY_CREATED_ON) OffsetDateTime createdOn, 
-    @JsonProperty(JSON_PROPERTY_PRIVILEGE) String privilege, 
-    @JsonProperty(JSON_PROPERTY_GRANTED_ON) String grantedOn, 
-    @JsonProperty(JSON_PROPERTY_NAME) String name, 
+    @JsonProperty(JSON_PROPERTY_ROLE) String role, 
     @JsonProperty(JSON_PROPERTY_GRANTED_TO) String grantedTo, 
-    @JsonProperty(JSON_PROPERTY_GRANTEE_NAME) String granteeName
+    @JsonProperty(JSON_PROPERTY_GRANTEE_NAME) String granteeName, 
+    @JsonProperty(JSON_PROPERTY_GRANTED_BY) String grantedBy
   ) {
     this();
     this.createdOn = createdOn;
-    this.privilege = privilege;
-    this.grantedOn = grantedOn;
-    this.name = name;
+    this.role = role;
     this.grantedTo = grantedTo;
     this.granteeName = granteeName;
+    this.grantedBy = grantedBy;
   }
 
   /**
@@ -100,49 +93,21 @@ public class ServiceRoleGrantTo {
 
 
   /**
-   * The name of the privilege
-   * @return privilege
+   * The name of the service role
+   * @return role
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_PRIVILEGE, required = false)
+  @JsonProperty(value = JSON_PROPERTY_ROLE, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getPrivilege() {
-    return privilege;
+  public String getRole() {
+    return role;
   }
 
 
 
   /**
-   * The type of of the securable
-   * @return grantedOn
-   */
-  @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_GRANTED_ON, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public String getGrantedOn() {
-    return grantedOn;
-  }
-
-
-
-  /**
-   * The name of the securable
-   * @return name
-   */
-  @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_NAME, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public String getName() {
-    return name;
-  }
-
-
-
-  /**
-   * The type of the grantee
+   * The type of the grantee, can be USER or ROLE
    * @return grantedTo
    */
   @javax.annotation.Nullable
@@ -169,6 +134,20 @@ public class ServiceRoleGrantTo {
 
 
 
+  /**
+   * The name of role that granted the service role to the grantee
+   * @return grantedBy
+   */
+  @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_GRANTED_BY, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getGrantedBy() {
+    return grantedBy;
+  }
+
+
+
 
   @Override
   public boolean equals(Object o) {
@@ -178,30 +157,28 @@ public class ServiceRoleGrantTo {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ServiceRoleGrantTo serviceRoleGrantTo = (ServiceRoleGrantTo) o;
-    return Objects.equals(this.createdOn, serviceRoleGrantTo.createdOn) &&
-        Objects.equals(this.privilege, serviceRoleGrantTo.privilege) &&
-        Objects.equals(this.grantedOn, serviceRoleGrantTo.grantedOn) &&
-        Objects.equals(this.name, serviceRoleGrantTo.name) &&
-        Objects.equals(this.grantedTo, serviceRoleGrantTo.grantedTo) &&
-        Objects.equals(this.granteeName, serviceRoleGrantTo.granteeName);
+    GrantOf grantOf = (GrantOf) o;
+    return Objects.equals(this.createdOn, grantOf.createdOn) &&
+        Objects.equals(this.role, grantOf.role) &&
+        Objects.equals(this.grantedTo, grantOf.grantedTo) &&
+        Objects.equals(this.granteeName, grantOf.granteeName) &&
+        Objects.equals(this.grantedBy, grantOf.grantedBy);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(createdOn, privilege, grantedOn, name, grantedTo, granteeName);
+    return Objects.hash(createdOn, role, grantedTo, granteeName, grantedBy);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ServiceRoleGrantTo {\n");
+    sb.append("class GrantOf {\n");
     sb.append("    createdOn: ").append(toIndentedString(createdOn)).append("\n");
-    sb.append("    privilege: ").append(toIndentedString(privilege)).append("\n");
-    sb.append("    grantedOn: ").append(toIndentedString(grantedOn)).append("\n");
-    sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("    role: ").append(toIndentedString(role)).append("\n");
     sb.append("    grantedTo: ").append(toIndentedString(grantedTo)).append("\n");
     sb.append("    granteeName: ").append(toIndentedString(granteeName)).append("\n");
+    sb.append("    grantedBy: ").append(toIndentedString(grantedBy)).append("\n");
     sb.append("}");
     return sb.toString();
   }

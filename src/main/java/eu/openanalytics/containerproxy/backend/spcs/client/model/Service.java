@@ -14,211 +14,194 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
+import java.util.Arrays;
 import java.util.Locale;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
 import eu.openanalytics.containerproxy.backend.spcs.client.model.ServiceSpec;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * Service
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:47:48.337179400+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  Service.JSON_PROPERTY_NAME,
+  Service.JSON_PROPERTY_STATUS,
+  Service.JSON_PROPERTY_COMPUTE_POOL,
+  Service.JSON_PROPERTY_SPEC,
+  Service.JSON_PROPERTY_EXTERNAL_ACCESS_INTEGRATIONS,
+  Service.JSON_PROPERTY_QUERY_WAREHOUSE,
+  Service.JSON_PROPERTY_COMMENT,
+  Service.JSON_PROPERTY_IS_ASYNC_JOB,
+  Service.JSON_PROPERTY_AUTO_RESUME,
+  Service.JSON_PROPERTY_CURRENT_INSTANCES,
+  Service.JSON_PROPERTY_TARGET_INSTANCES,
+  Service.JSON_PROPERTY_MIN_READY_INSTANCES,
+  Service.JSON_PROPERTY_MIN_INSTANCES,
+  Service.JSON_PROPERTY_MAX_INSTANCES,
+  Service.JSON_PROPERTY_DATABASE_NAME,
+  Service.JSON_PROPERTY_SCHEMA_NAME,
+  Service.JSON_PROPERTY_OWNER,
+  Service.JSON_PROPERTY_DNS_NAME,
+  Service.JSON_PROPERTY_CREATED_ON,
+  Service.JSON_PROPERTY_UPDATED_ON,
+  Service.JSON_PROPERTY_RESUMED_ON,
+  Service.JSON_PROPERTY_SUSPENDED_ON,
+  Service.JSON_PROPERTY_AUTO_SUSPEND_SECS,
+  Service.JSON_PROPERTY_OWNER_ROLE_TYPE,
+  Service.JSON_PROPERTY_IS_JOB,
+  Service.JSON_PROPERTY_SPEC_DIGEST,
+  Service.JSON_PROPERTY_IS_UPGRADING,
+  Service.JSON_PROPERTY_MANAGING_OBJECT_DOMAIN,
+  Service.JSON_PROPERTY_MANAGING_OBJECT_NAME
+})
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:25.529847700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class Service {
-  public static final String SERIALIZED_NAME_NAME = "name";
-  @SerializedName(SERIALIZED_NAME_NAME)
+  public static final String JSON_PROPERTY_NAME = "name";
   @javax.annotation.Nonnull
   private String name;
 
-  public static final String SERIALIZED_NAME_STATUS = "status";
-  @SerializedName(SERIALIZED_NAME_STATUS)
+  public static final String JSON_PROPERTY_STATUS = "status";
   @javax.annotation.Nullable
   private String status;
 
-  public static final String SERIALIZED_NAME_COMPUTE_POOL = "compute_pool";
-  @SerializedName(SERIALIZED_NAME_COMPUTE_POOL)
+  public static final String JSON_PROPERTY_COMPUTE_POOL = "compute_pool";
   @javax.annotation.Nonnull
   private String computePool;
 
-  public static final String SERIALIZED_NAME_SPEC = "spec";
-  @SerializedName(SERIALIZED_NAME_SPEC)
+  public static final String JSON_PROPERTY_SPEC = "spec";
   @javax.annotation.Nonnull
   private ServiceSpec spec;
 
-  public static final String SERIALIZED_NAME_EXTERNAL_ACCESS_INTEGRATIONS = "external_access_integrations";
-  @SerializedName(SERIALIZED_NAME_EXTERNAL_ACCESS_INTEGRATIONS)
+  public static final String JSON_PROPERTY_EXTERNAL_ACCESS_INTEGRATIONS = "external_access_integrations";
   @javax.annotation.Nullable
   private List<String> externalAccessIntegrations = new ArrayList<>();
 
-  public static final String SERIALIZED_NAME_QUERY_WAREHOUSE = "query_warehouse";
-  @SerializedName(SERIALIZED_NAME_QUERY_WAREHOUSE)
+  public static final String JSON_PROPERTY_QUERY_WAREHOUSE = "query_warehouse";
   @javax.annotation.Nullable
   private String queryWarehouse;
 
-  public static final String SERIALIZED_NAME_COMMENT = "comment";
-  @SerializedName(SERIALIZED_NAME_COMMENT)
+  public static final String JSON_PROPERTY_COMMENT = "comment";
   @javax.annotation.Nullable
   private String comment;
 
-  public static final String SERIALIZED_NAME_IS_ASYNC_JOB = "is_async_job";
-  @SerializedName(SERIALIZED_NAME_IS_ASYNC_JOB)
+  public static final String JSON_PROPERTY_IS_ASYNC_JOB = "is_async_job";
   @javax.annotation.Nullable
   private Boolean isAsyncJob;
 
-  public static final String SERIALIZED_NAME_AUTO_RESUME = "auto_resume";
-  @SerializedName(SERIALIZED_NAME_AUTO_RESUME)
+  public static final String JSON_PROPERTY_AUTO_RESUME = "auto_resume";
   @javax.annotation.Nullable
   private Boolean autoResume;
 
-  public static final String SERIALIZED_NAME_CURRENT_INSTANCES = "current_instances";
-  @SerializedName(SERIALIZED_NAME_CURRENT_INSTANCES)
+  public static final String JSON_PROPERTY_CURRENT_INSTANCES = "current_instances";
   @javax.annotation.Nullable
   private Integer currentInstances;
 
-  public static final String SERIALIZED_NAME_TARGET_INSTANCES = "target_instances";
-  @SerializedName(SERIALIZED_NAME_TARGET_INSTANCES)
+  public static final String JSON_PROPERTY_TARGET_INSTANCES = "target_instances";
   @javax.annotation.Nullable
   private Integer targetInstances;
 
-  public static final String SERIALIZED_NAME_MIN_READY_INSTANCES = "min_ready_instances";
-  @SerializedName(SERIALIZED_NAME_MIN_READY_INSTANCES)
+  public static final String JSON_PROPERTY_MIN_READY_INSTANCES = "min_ready_instances";
   @javax.annotation.Nullable
   private Integer minReadyInstances;
 
-  public static final String SERIALIZED_NAME_MIN_INSTANCES = "min_instances";
-  @SerializedName(SERIALIZED_NAME_MIN_INSTANCES)
+  public static final String JSON_PROPERTY_MIN_INSTANCES = "min_instances";
   @javax.annotation.Nullable
   private Integer minInstances;
 
-  public static final String SERIALIZED_NAME_MAX_INSTANCES = "max_instances";
-  @SerializedName(SERIALIZED_NAME_MAX_INSTANCES)
+  public static final String JSON_PROPERTY_MAX_INSTANCES = "max_instances";
   @javax.annotation.Nullable
   private Integer maxInstances;
 
-  public static final String SERIALIZED_NAME_DATABASE_NAME = "database_name";
-  @SerializedName(SERIALIZED_NAME_DATABASE_NAME)
+  public static final String JSON_PROPERTY_DATABASE_NAME = "database_name";
   @javax.annotation.Nullable
   private String databaseName;
 
-  public static final String SERIALIZED_NAME_SCHEMA_NAME = "schema_name";
-  @SerializedName(SERIALIZED_NAME_SCHEMA_NAME)
+  public static final String JSON_PROPERTY_SCHEMA_NAME = "schema_name";
   @javax.annotation.Nullable
   private String schemaName;
 
-  public static final String SERIALIZED_NAME_OWNER = "owner";
-  @SerializedName(SERIALIZED_NAME_OWNER)
+  public static final String JSON_PROPERTY_OWNER = "owner";
   @javax.annotation.Nullable
   private String owner;
 
-  public static final String SERIALIZED_NAME_DNS_NAME = "dns_name";
-  @SerializedName(SERIALIZED_NAME_DNS_NAME)
+  public static final String JSON_PROPERTY_DNS_NAME = "dns_name";
   @javax.annotation.Nullable
   private String dnsName;
 
-  public static final String SERIALIZED_NAME_CREATED_ON = "created_on";
-  @SerializedName(SERIALIZED_NAME_CREATED_ON)
+  public static final String JSON_PROPERTY_CREATED_ON = "created_on";
   @javax.annotation.Nullable
   private OffsetDateTime createdOn;
 
-  public static final String SERIALIZED_NAME_UPDATED_ON = "updated_on";
-  @SerializedName(SERIALIZED_NAME_UPDATED_ON)
+  public static final String JSON_PROPERTY_UPDATED_ON = "updated_on";
   @javax.annotation.Nullable
   private OffsetDateTime updatedOn;
 
-  public static final String SERIALIZED_NAME_RESUMED_ON = "resumed_on";
-  @SerializedName(SERIALIZED_NAME_RESUMED_ON)
+  public static final String JSON_PROPERTY_RESUMED_ON = "resumed_on";
   @javax.annotation.Nullable
   private OffsetDateTime resumedOn;
 
-  public static final String SERIALIZED_NAME_SUSPENDED_ON = "suspended_on";
-  @SerializedName(SERIALIZED_NAME_SUSPENDED_ON)
+  public static final String JSON_PROPERTY_SUSPENDED_ON = "suspended_on";
   @javax.annotation.Nullable
   private OffsetDateTime suspendedOn;
 
-  public static final String SERIALIZED_NAME_AUTO_SUSPEND_SECS = "auto_suspend_secs";
-  @SerializedName(SERIALIZED_NAME_AUTO_SUSPEND_SECS)
+  public static final String JSON_PROPERTY_AUTO_SUSPEND_SECS = "auto_suspend_secs";
   @javax.annotation.Nullable
   private Long autoSuspendSecs;
 
-  public static final String SERIALIZED_NAME_OWNER_ROLE_TYPE = "owner_role_type";
-  @SerializedName(SERIALIZED_NAME_OWNER_ROLE_TYPE)
+  public static final String JSON_PROPERTY_OWNER_ROLE_TYPE = "owner_role_type";
   @javax.annotation.Nullable
   private String ownerRoleType;
 
-  public static final String SERIALIZED_NAME_IS_JOB = "is_job";
-  @SerializedName(SERIALIZED_NAME_IS_JOB)
+  public static final String JSON_PROPERTY_IS_JOB = "is_job";
   @javax.annotation.Nullable
   private Boolean isJob;
 
-  public static final String SERIALIZED_NAME_SPEC_DIGEST = "spec_digest";
-  @SerializedName(SERIALIZED_NAME_SPEC_DIGEST)
+  public static final String JSON_PROPERTY_SPEC_DIGEST = "spec_digest";
   @javax.annotation.Nullable
   private String specDigest;
 
-  public static final String SERIALIZED_NAME_IS_UPGRADING = "is_upgrading";
-  @SerializedName(SERIALIZED_NAME_IS_UPGRADING)
+  public static final String JSON_PROPERTY_IS_UPGRADING = "is_upgrading";
   @javax.annotation.Nullable
   private Boolean isUpgrading;
 
-  public static final String SERIALIZED_NAME_MANAGING_OBJECT_DOMAIN = "managing_object_domain";
-  @SerializedName(SERIALIZED_NAME_MANAGING_OBJECT_DOMAIN)
+  public static final String JSON_PROPERTY_MANAGING_OBJECT_DOMAIN = "managing_object_domain";
   @javax.annotation.Nullable
   private String managingObjectDomain;
 
-  public static final String SERIALIZED_NAME_MANAGING_OBJECT_NAME = "managing_object_name";
-  @SerializedName(SERIALIZED_NAME_MANAGING_OBJECT_NAME)
+  public static final String JSON_PROPERTY_MANAGING_OBJECT_NAME = "managing_object_name";
   @javax.annotation.Nullable
   private String managingObjectName;
 
   public Service() {
   }
-
+  /**
+   * Constructor with only readonly parameters
+   */
+  @JsonCreator
   public Service(
-     Integer currentInstances, 
-     Integer targetInstances, 
-     String owner, 
-     String dnsName, 
-     OffsetDateTime createdOn, 
-     OffsetDateTime updatedOn, 
-     OffsetDateTime resumedOn, 
-     OffsetDateTime suspendedOn, 
-     String ownerRoleType, 
-     Boolean isJob, 
-     String specDigest, 
-     Boolean isUpgrading, 
-     String managingObjectDomain, 
-     String managingObjectName
+    @JsonProperty(JSON_PROPERTY_CURRENT_INSTANCES) Integer currentInstances, 
+    @JsonProperty(JSON_PROPERTY_TARGET_INSTANCES) Integer targetInstances, 
+    @JsonProperty(JSON_PROPERTY_OWNER) String owner, 
+    @JsonProperty(JSON_PROPERTY_DNS_NAME) String dnsName, 
+    @JsonProperty(JSON_PROPERTY_CREATED_ON) OffsetDateTime createdOn, 
+    @JsonProperty(JSON_PROPERTY_UPDATED_ON) OffsetDateTime updatedOn, 
+    @JsonProperty(JSON_PROPERTY_RESUMED_ON) OffsetDateTime resumedOn, 
+    @JsonProperty(JSON_PROPERTY_SUSPENDED_ON) OffsetDateTime suspendedOn, 
+    @JsonProperty(JSON_PROPERTY_OWNER_ROLE_TYPE) String ownerRoleType, 
+    @JsonProperty(JSON_PROPERTY_IS_JOB) Boolean isJob, 
+    @JsonProperty(JSON_PROPERTY_SPEC_DIGEST) String specDigest, 
+    @JsonProperty(JSON_PROPERTY_IS_UPGRADING) Boolean isUpgrading, 
+    @JsonProperty(JSON_PROPERTY_MANAGING_OBJECT_DOMAIN) String managingObjectDomain, 
+    @JsonProperty(JSON_PROPERTY_MANAGING_OBJECT_NAME) String managingObjectName
   ) {
     this();
     this.currentInstances = currentInstances;
@@ -238,6 +221,7 @@ public class Service {
   }
 
   public Service name(@javax.annotation.Nonnull String name) {
+    
     this.name = name;
     return this;
   }
@@ -247,16 +231,22 @@ public class Service {
    * @return name
    */
   @javax.annotation.Nonnull
+  @JsonProperty(value = JSON_PROPERTY_NAME, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
   public String getName() {
     return name;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_NAME, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setName(@javax.annotation.Nonnull String name) {
     this.name = name;
   }
 
-
   public Service status(@javax.annotation.Nullable String status) {
+    
     this.status = status;
     return this;
   }
@@ -266,16 +256,22 @@ public class Service {
    * @return status
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_STATUS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getStatus() {
     return status;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_STATUS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setStatus(@javax.annotation.Nullable String status) {
     this.status = status;
   }
 
-
   public Service computePool(@javax.annotation.Nonnull String computePool) {
+    
     this.computePool = computePool;
     return this;
   }
@@ -285,16 +281,22 @@ public class Service {
    * @return computePool
    */
   @javax.annotation.Nonnull
+  @JsonProperty(value = JSON_PROPERTY_COMPUTE_POOL, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
   public String getComputePool() {
     return computePool;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_COMPUTE_POOL, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setComputePool(@javax.annotation.Nonnull String computePool) {
     this.computePool = computePool;
   }
 
-
   public Service spec(@javax.annotation.Nonnull ServiceSpec spec) {
+    
     this.spec = spec;
     return this;
   }
@@ -304,16 +306,22 @@ public class Service {
    * @return spec
    */
   @javax.annotation.Nonnull
+  @JsonProperty(value = JSON_PROPERTY_SPEC, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
   public ServiceSpec getSpec() {
     return spec;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_SPEC, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setSpec(@javax.annotation.Nonnull ServiceSpec spec) {
     this.spec = spec;
   }
 
-
   public Service externalAccessIntegrations(@javax.annotation.Nullable List<String> externalAccessIntegrations) {
+    
     this.externalAccessIntegrations = externalAccessIntegrations;
     return this;
   }
@@ -331,16 +339,22 @@ public class Service {
    * @return externalAccessIntegrations
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_EXTERNAL_ACCESS_INTEGRATIONS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public List<String> getExternalAccessIntegrations() {
     return externalAccessIntegrations;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_EXTERNAL_ACCESS_INTEGRATIONS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setExternalAccessIntegrations(@javax.annotation.Nullable List<String> externalAccessIntegrations) {
     this.externalAccessIntegrations = externalAccessIntegrations;
   }
 
-
   public Service queryWarehouse(@javax.annotation.Nullable String queryWarehouse) {
+    
     this.queryWarehouse = queryWarehouse;
     return this;
   }
@@ -350,16 +364,22 @@ public class Service {
    * @return queryWarehouse
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_QUERY_WAREHOUSE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getQueryWarehouse() {
     return queryWarehouse;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_QUERY_WAREHOUSE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setQueryWarehouse(@javax.annotation.Nullable String queryWarehouse) {
     this.queryWarehouse = queryWarehouse;
   }
 
-
   public Service comment(@javax.annotation.Nullable String comment) {
+    
     this.comment = comment;
     return this;
   }
@@ -369,16 +389,22 @@ public class Service {
    * @return comment
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_COMMENT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getComment() {
     return comment;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_COMMENT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setComment(@javax.annotation.Nullable String comment) {
     this.comment = comment;
   }
 
-
   public Service isAsyncJob(@javax.annotation.Nullable Boolean isAsyncJob) {
+    
     this.isAsyncJob = isAsyncJob;
     return this;
   }
@@ -388,16 +414,22 @@ public class Service {
    * @return isAsyncJob
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_IS_ASYNC_JOB, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Boolean getIsAsyncJob() {
     return isAsyncJob;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_IS_ASYNC_JOB, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setIsAsyncJob(@javax.annotation.Nullable Boolean isAsyncJob) {
     this.isAsyncJob = isAsyncJob;
   }
 
-
   public Service autoResume(@javax.annotation.Nullable Boolean autoResume) {
+    
     this.autoResume = autoResume;
     return this;
   }
@@ -407,20 +439,28 @@ public class Service {
    * @return autoResume
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_AUTO_RESUME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Boolean getAutoResume() {
     return autoResume;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_AUTO_RESUME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setAutoResume(@javax.annotation.Nullable Boolean autoResume) {
     this.autoResume = autoResume;
   }
-
 
   /**
    * The current number of instances for the service.
    * @return currentInstances
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_CURRENT_INSTANCES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Integer getCurrentInstances() {
     return currentInstances;
   }
@@ -432,6 +472,9 @@ public class Service {
    * @return targetInstances
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_TARGET_INSTANCES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Integer getTargetInstances() {
     return targetInstances;
   }
@@ -439,6 +482,7 @@ public class Service {
 
 
   public Service minReadyInstances(@javax.annotation.Nullable Integer minReadyInstances) {
+    
     this.minReadyInstances = minReadyInstances;
     return this;
   }
@@ -448,16 +492,22 @@ public class Service {
    * @return minReadyInstances
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_MIN_READY_INSTANCES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Integer getMinReadyInstances() {
     return minReadyInstances;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_MIN_READY_INSTANCES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMinReadyInstances(@javax.annotation.Nullable Integer minReadyInstances) {
     this.minReadyInstances = minReadyInstances;
   }
 
-
   public Service minInstances(@javax.annotation.Nullable Integer minInstances) {
+    
     this.minInstances = minInstances;
     return this;
   }
@@ -467,16 +517,22 @@ public class Service {
    * @return minInstances
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_MIN_INSTANCES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Integer getMinInstances() {
     return minInstances;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_MIN_INSTANCES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMinInstances(@javax.annotation.Nullable Integer minInstances) {
     this.minInstances = minInstances;
   }
 
-
   public Service maxInstances(@javax.annotation.Nullable Integer maxInstances) {
+    
     this.maxInstances = maxInstances;
     return this;
   }
@@ -486,16 +542,22 @@ public class Service {
    * @return maxInstances
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_MAX_INSTANCES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Integer getMaxInstances() {
     return maxInstances;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_MAX_INSTANCES, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMaxInstances(@javax.annotation.Nullable Integer maxInstances) {
     this.maxInstances = maxInstances;
   }
 
-
   public Service databaseName(@javax.annotation.Nullable String databaseName) {
+    
     this.databaseName = databaseName;
     return this;
   }
@@ -505,16 +567,22 @@ public class Service {
    * @return databaseName
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_DATABASE_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getDatabaseName() {
     return databaseName;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_DATABASE_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setDatabaseName(@javax.annotation.Nullable String databaseName) {
     this.databaseName = databaseName;
   }
 
-
   public Service schemaName(@javax.annotation.Nullable String schemaName) {
+    
     this.schemaName = schemaName;
     return this;
   }
@@ -524,20 +592,28 @@ public class Service {
    * @return schemaName
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SCHEMA_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getSchemaName() {
     return schemaName;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_SCHEMA_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSchemaName(@javax.annotation.Nullable String schemaName) {
     this.schemaName = schemaName;
   }
-
 
   /**
    * Role that owns the service.
    * @return owner
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_OWNER, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getOwner() {
     return owner;
   }
@@ -549,6 +625,9 @@ public class Service {
    * @return dnsName
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_DNS_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getDnsName() {
     return dnsName;
   }
@@ -560,6 +639,9 @@ public class Service {
    * @return createdOn
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_CREATED_ON, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public OffsetDateTime getCreatedOn() {
     return createdOn;
   }
@@ -571,6 +653,9 @@ public class Service {
    * @return updatedOn
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_UPDATED_ON, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public OffsetDateTime getUpdatedOn() {
     return updatedOn;
   }
@@ -582,6 +667,9 @@ public class Service {
    * @return resumedOn
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_RESUMED_ON, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public OffsetDateTime getResumedOn() {
     return resumedOn;
   }
@@ -593,6 +681,9 @@ public class Service {
    * @return suspendedOn
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SUSPENDED_ON, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public OffsetDateTime getSuspendedOn() {
     return suspendedOn;
   }
@@ -600,6 +691,7 @@ public class Service {
 
 
   public Service autoSuspendSecs(@javax.annotation.Nullable Long autoSuspendSecs) {
+    
     this.autoSuspendSecs = autoSuspendSecs;
     return this;
   }
@@ -609,20 +701,28 @@ public class Service {
    * @return autoSuspendSecs
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_AUTO_SUSPEND_SECS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getAutoSuspendSecs() {
     return autoSuspendSecs;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_AUTO_SUSPEND_SECS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setAutoSuspendSecs(@javax.annotation.Nullable Long autoSuspendSecs) {
     this.autoSuspendSecs = autoSuspendSecs;
   }
-
 
   /**
    * The role type of the service owner.
    * @return ownerRoleType
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_OWNER_ROLE_TYPE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getOwnerRoleType() {
     return ownerRoleType;
   }
@@ -634,6 +734,9 @@ public class Service {
    * @return isJob
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_IS_JOB, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Boolean getIsJob() {
     return isJob;
   }
@@ -645,6 +748,9 @@ public class Service {
    * @return specDigest
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SPEC_DIGEST, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getSpecDigest() {
     return specDigest;
   }
@@ -656,6 +762,9 @@ public class Service {
    * @return isUpgrading
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_IS_UPGRADING, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Boolean getIsUpgrading() {
     return isUpgrading;
   }
@@ -667,6 +776,9 @@ public class Service {
    * @return managingObjectDomain
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_MANAGING_OBJECT_DOMAIN, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getManagingObjectDomain() {
     return managingObjectDomain;
   }
@@ -678,6 +790,9 @@ public class Service {
    * @return managingObjectName
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_MANAGING_OBJECT_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getManagingObjectName() {
     return managingObjectName;
   }
@@ -778,141 +893,5 @@ public class Service {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("name", "status", "compute_pool", "spec", "external_access_integrations", "query_warehouse", "comment", "is_async_job", "auto_resume", "current_instances", "target_instances", "min_ready_instances", "min_instances", "max_instances", "database_name", "schema_name", "owner", "dns_name", "created_on", "updated_on", "resumed_on", "suspended_on", "auto_suspend_secs", "owner_role_type", "is_job", "spec_digest", "is_upgrading", "managing_object_domain", "managing_object_name"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(Arrays.asList("name", "compute_pool", "spec"));
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to Service
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!Service.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in Service is not found in the empty JSON string", Service.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!Service.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `Service` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : Service.openapiRequiredFields) {
-        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if (!jsonObj.get("name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("name").toString()));
-      }
-      if ((jsonObj.get("status") != null && !jsonObj.get("status").isJsonNull()) && !jsonObj.get("status").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("status").toString()));
-      }
-      if (!jsonObj.get("compute_pool").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `compute_pool` to be a primitive type in the JSON string but got `%s`", jsonObj.get("compute_pool").toString()));
-      }
-      // validate the required field `spec`
-      ServiceSpec.validateJsonElement(jsonObj.get("spec"));
-      // ensure the optional json data is an array if present
-      if (jsonObj.get("external_access_integrations") != null && !jsonObj.get("external_access_integrations").isJsonNull() && !jsonObj.get("external_access_integrations").isJsonArray()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `external_access_integrations` to be an array in the JSON string but got `%s`", jsonObj.get("external_access_integrations").toString()));
-      }
-      if ((jsonObj.get("query_warehouse") != null && !jsonObj.get("query_warehouse").isJsonNull()) && !jsonObj.get("query_warehouse").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `query_warehouse` to be a primitive type in the JSON string but got `%s`", jsonObj.get("query_warehouse").toString()));
-      }
-      if ((jsonObj.get("comment") != null && !jsonObj.get("comment").isJsonNull()) && !jsonObj.get("comment").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `comment` to be a primitive type in the JSON string but got `%s`", jsonObj.get("comment").toString()));
-      }
-      if ((jsonObj.get("database_name") != null && !jsonObj.get("database_name").isJsonNull()) && !jsonObj.get("database_name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `database_name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("database_name").toString()));
-      }
-      if ((jsonObj.get("schema_name") != null && !jsonObj.get("schema_name").isJsonNull()) && !jsonObj.get("schema_name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `schema_name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("schema_name").toString()));
-      }
-      if ((jsonObj.get("owner") != null && !jsonObj.get("owner").isJsonNull()) && !jsonObj.get("owner").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `owner` to be a primitive type in the JSON string but got `%s`", jsonObj.get("owner").toString()));
-      }
-      if ((jsonObj.get("dns_name") != null && !jsonObj.get("dns_name").isJsonNull()) && !jsonObj.get("dns_name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `dns_name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("dns_name").toString()));
-      }
-      if ((jsonObj.get("owner_role_type") != null && !jsonObj.get("owner_role_type").isJsonNull()) && !jsonObj.get("owner_role_type").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `owner_role_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("owner_role_type").toString()));
-      }
-      if ((jsonObj.get("spec_digest") != null && !jsonObj.get("spec_digest").isJsonNull()) && !jsonObj.get("spec_digest").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `spec_digest` to be a primitive type in the JSON string but got `%s`", jsonObj.get("spec_digest").toString()));
-      }
-      if ((jsonObj.get("managing_object_domain") != null && !jsonObj.get("managing_object_domain").isJsonNull()) && !jsonObj.get("managing_object_domain").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `managing_object_domain` to be a primitive type in the JSON string but got `%s`", jsonObj.get("managing_object_domain").toString()));
-      }
-      if ((jsonObj.get("managing_object_name") != null && !jsonObj.get("managing_object_name").isJsonNull()) && !jsonObj.get("managing_object_name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `managing_object_name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("managing_object_name").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!Service.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'Service' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<Service> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(Service.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<Service>() {
-           @Override
-           public void write(JsonWriter out, Service value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public Service read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of Service given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of Service
-   * @throws IOException if the JSON string is invalid with respect to Service
-   */
-  public static Service fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, Service.class);
-  }
-
-  /**
-   * Convert an instance of Service to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
-
 

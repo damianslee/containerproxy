@@ -13,64 +13,51 @@
 
 package eu.openanalytics.containerproxy.backend.spcs.client.auth;
 
-import eu.openanalytics.containerproxy.backend.spcs.client.ApiException;
-import eu.openanalytics.containerproxy.backend.spcs.client.Pair;
+import org.springframework.http.HttpHeaders;
+import org.springframework.util.MultiValueMap;
 
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.Supplier;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:48:43.068946900+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:42:29.597406700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class HttpBearerAuth implements Authentication {
-  private final String scheme;
-  private Supplier<String> tokenSupplier;
+    private final String scheme;
+    private String bearerToken;
+    /** Optional: when set, token is resolved per request (e.g. for SPCS session token file). */
+    private Supplier<String> bearerTokenSupplier;
 
-  public HttpBearerAuth(String scheme) {
-    this.scheme = scheme;
-  }
-
-  /**
-   * Gets the token, which together with the scheme, will be sent as the value of the Authorization header.
-   *
-   * @return The bearer token
-   */
-  public String getBearerToken() {
-    return tokenSupplier.get();
-  }
-
-  /**
-   * Sets the token, which together with the scheme, will be sent as the value of the Authorization header.
-   *
-   * @param bearerToken The bearer token to send in the Authorization header
-   */
-  public void setBearerToken(String bearerToken) {
-    this.tokenSupplier = () -> bearerToken;
-  }
-
-  /**
-   * Sets the supplier of tokens, which together with the scheme, will be sent as the value of the Authorization header.
-   *
-   * @param tokenSupplier The supplier of bearer tokens to send in the Authorization header
-   */
-  public void setBearerToken(Supplier<String> tokenSupplier) {
-    this.tokenSupplier = tokenSupplier;
-  }
-
-  @Override
-  public void applyToParams(List<Pair> queryParams, Map<String, String> headerParams, Map<String, String> cookieParams,
-                            String payload, String method, URI uri) throws ApiException {
-    String bearerToken = Optional.ofNullable(tokenSupplier).map(Supplier::get).orElse(null);
-    if (bearerToken == null) {
-      return;
+    public HttpBearerAuth(String scheme) {
+        this.scheme = scheme;
     }
 
-    headerParams.put("Authorization", (scheme != null ? upperCaseBearer(scheme) + " " : "") + bearerToken);
-  }
+    public String getBearerToken() {
+        return bearerToken;
+    }
 
-  private static String upperCaseBearer(String scheme) {
-    return ("bearer".equalsIgnoreCase(scheme)) ? "Bearer" : scheme;
-  }
+    public void setBearerToken(String bearerToken) {
+        this.bearerToken = bearerToken;
+        this.bearerTokenSupplier = null;
+    }
+
+    /**
+     * Set a supplier so the token is resolved on each request.
+     * Use for SPCS session token (file can be updated) or keypair JWT (refresh on expiry).
+     */
+    public void setBearerToken(Supplier<String> bearerTokenSupplier) {
+        this.bearerTokenSupplier = bearerTokenSupplier;
+        this.bearerToken = null;
+    }
+
+    @Override
+    public void applyToParams(MultiValueMap<String, String> queryParams, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams) {
+        String token = bearerTokenSupplier != null ? bearerTokenSupplier.get() : bearerToken;
+        if (token == null) {
+            return;
+        }
+        headerParams.add(HttpHeaders.AUTHORIZATION, (scheme != null ? upperCaseBearer(scheme) + " " : "") + token);
+    }
+
+    private static String upperCaseBearer(String scheme) {
+        return ("bearer".equalsIgnoreCase(scheme)) ? "Bearer" : scheme;
+    }
+
 }
-

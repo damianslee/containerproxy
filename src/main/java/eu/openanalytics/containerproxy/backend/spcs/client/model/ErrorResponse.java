@@ -14,61 +14,40 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * ErrorResponse
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:48:43.068946900+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  ErrorResponse.JSON_PROPERTY_MESSAGE,
+  ErrorResponse.JSON_PROPERTY_CODE,
+  ErrorResponse.JSON_PROPERTY_ERROR_CODE,
+  ErrorResponse.JSON_PROPERTY_REQUEST_ID
+})
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:42:29.597406700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class ErrorResponse {
-  public static final String SERIALIZED_NAME_MESSAGE = "message";
-  @SerializedName(SERIALIZED_NAME_MESSAGE)
+  public static final String JSON_PROPERTY_MESSAGE = "message";
   @javax.annotation.Nullable
   private String message;
 
-  public static final String SERIALIZED_NAME_CODE = "code";
-  @SerializedName(SERIALIZED_NAME_CODE)
+  public static final String JSON_PROPERTY_CODE = "code";
   @javax.annotation.Nullable
   private String code;
 
-  public static final String SERIALIZED_NAME_ERROR_CODE = "error_code";
-  @SerializedName(SERIALIZED_NAME_ERROR_CODE)
+  public static final String JSON_PROPERTY_ERROR_CODE = "error_code";
   @javax.annotation.Nullable
   private String errorCode;
 
-  public static final String SERIALIZED_NAME_REQUEST_ID = "request_id";
-  @SerializedName(SERIALIZED_NAME_REQUEST_ID)
+  public static final String JSON_PROPERTY_REQUEST_ID = "request_id";
   @javax.annotation.Nullable
   private String requestId;
 
@@ -76,6 +55,7 @@ public class ErrorResponse {
   }
 
   public ErrorResponse message(@javax.annotation.Nullable String message) {
+    
     this.message = message;
     return this;
   }
@@ -85,16 +65,22 @@ public class ErrorResponse {
    * @return message
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_MESSAGE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getMessage() {
     return message;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_MESSAGE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMessage(@javax.annotation.Nullable String message) {
     this.message = message;
   }
 
-
   public ErrorResponse code(@javax.annotation.Nullable String code) {
+    
     this.code = code;
     return this;
   }
@@ -104,16 +90,22 @@ public class ErrorResponse {
    * @return code
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_CODE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getCode() {
     return code;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_CODE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setCode(@javax.annotation.Nullable String code) {
     this.code = code;
   }
 
-
   public ErrorResponse errorCode(@javax.annotation.Nullable String errorCode) {
+    
     this.errorCode = errorCode;
     return this;
   }
@@ -123,16 +115,22 @@ public class ErrorResponse {
    * @return errorCode
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_ERROR_CODE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getErrorCode() {
     return errorCode;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_ERROR_CODE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setErrorCode(@javax.annotation.Nullable String errorCode) {
     this.errorCode = errorCode;
   }
 
-
   public ErrorResponse requestId(@javax.annotation.Nullable String requestId) {
+    
     this.requestId = requestId;
     return this;
   }
@@ -142,14 +140,19 @@ public class ErrorResponse {
    * @return requestId
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_REQUEST_ID, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getRequestId() {
     return requestId;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_REQUEST_ID, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setRequestId(@javax.annotation.Nullable String requestId) {
     this.requestId = requestId;
   }
-
 
 
   @Override
@@ -195,101 +198,5 @@ public class ErrorResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("message", "code", "error_code", "request_id"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(0);
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to ErrorResponse
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!ErrorResponse.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in ErrorResponse is not found in the empty JSON string", ErrorResponse.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!ErrorResponse.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ErrorResponse` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if ((jsonObj.get("message") != null && !jsonObj.get("message").isJsonNull()) && !jsonObj.get("message").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("message").toString()));
-      }
-      if ((jsonObj.get("code") != null && !jsonObj.get("code").isJsonNull()) && !jsonObj.get("code").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `code` to be a primitive type in the JSON string but got `%s`", jsonObj.get("code").toString()));
-      }
-      if ((jsonObj.get("error_code") != null && !jsonObj.get("error_code").isJsonNull()) && !jsonObj.get("error_code").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `error_code` to be a primitive type in the JSON string but got `%s`", jsonObj.get("error_code").toString()));
-      }
-      if ((jsonObj.get("request_id") != null && !jsonObj.get("request_id").isJsonNull()) && !jsonObj.get("request_id").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `request_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("request_id").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ErrorResponse.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ErrorResponse' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ErrorResponse> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ErrorResponse.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ErrorResponse>() {
-           @Override
-           public void write(JsonWriter out, ErrorResponse value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ErrorResponse read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of ErrorResponse given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of ErrorResponse
-   * @throws IOException if the JSON string is invalid with respect to ErrorResponse
-   */
-  public static ErrorResponse fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ErrorResponse.class);
-  }
-
-  /**
-   * Convert an instance of ErrorResponse to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
-
 

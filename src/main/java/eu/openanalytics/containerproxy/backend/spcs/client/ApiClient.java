@@ -13,439 +13,220 @@
 
 package eu.openanalytics.containerproxy.backend.spcs.client;
 
-import okhttp3.*;
-import okhttp3.internal.http.HttpMethod;
-import okhttp3.internal.tls.OkHostnameVerifier;
-import okhttp3.logging.HttpLoggingInterceptor;
-import okhttp3.logging.HttpLoggingInterceptor.Level;
-import okio.Buffer;
-import okio.BufferedSink;
-import okio.Okio;
-import org.apache.oltu.oauth2.client.request.OAuthClientRequest.TokenRequestBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.openapitools.jackson.nullable.JsonNullableModule;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.InvalidMediaTypeException;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.RequestEntity.BodyBuilder;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.reactive.ClientHttpRequest;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClient.ResponseSpec;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.BodyInserter;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
+import java.util.Optional;
 
-import javax.net.ssl.*;
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Type;
-import java.net.URI;
-import java.net.URLConnection;
+import java.io.InputStreamReader;
 import java.net.URLEncoder;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-import java.security.SecureRandom;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.text.ParseException;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.TimeZone;
+
+import javax.annotation.Nullable;
+
+import java.time.OffsetDateTime;
 
 import eu.openanalytics.containerproxy.backend.spcs.client.auth.Authentication;
 import eu.openanalytics.containerproxy.backend.spcs.client.auth.HttpBasicAuth;
 import eu.openanalytics.containerproxy.backend.spcs.client.auth.HttpBearerAuth;
 import eu.openanalytics.containerproxy.backend.spcs.client.auth.ApiKeyAuth;
 import eu.openanalytics.containerproxy.backend.spcs.client.auth.OAuth;
-import eu.openanalytics.containerproxy.backend.spcs.client.auth.RetryingOAuth;
-import eu.openanalytics.containerproxy.backend.spcs.client.auth.OAuthFlow;
 
-/**
- * <p>ApiClient class.</p>
- */
-public class ApiClient {
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:42:29.597406700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+public class ApiClient extends JavaTimeFormatter {
+    public enum CollectionFormat {
+        CSV(","), TSV("\t"), SSV(" "), PIPES("|"), MULTI(null);
+
+        protected final String separator;
+        CollectionFormat(String separator) {
+            this.separator = separator;
+        }
+
+        protected String collectionToString(Collection<?> collection) {
+            return StringUtils.collectionToDelimitedString(collection, separator);
+        }
+    }
+
+    protected static final String URI_TEMPLATE_ATTRIBUTE = WebClient.class.getName() + ".uriTemplate";
+
+    protected HttpHeaders defaultHeaders = new HttpHeaders();
+    protected MultiValueMap<String, String> defaultCookies = new LinkedMultiValueMap<String, String>();
 
     protected String basePath = "https://org-account.snowflakecomputing.com";
-    protected List<ServerConfiguration> servers = new ArrayList<ServerConfiguration>(Arrays.asList(
-    new ServerConfiguration(
-      "https://org-account.snowflakecomputing.com",
-      "Snowflake Warehouse API",
-      new HashMap<String, ServerVariable>()
-    )
-  ));
-    protected Integer serverIndex = 0;
-    protected Map<String, String> serverVariables = null;
-    protected boolean debugging = false;
-    protected Map<String, String> defaultHeaderMap = new HashMap<String, String>();
-    protected Map<String, String> defaultCookieMap = new HashMap<String, String>();
-    protected String tempFolderPath = null;
+
+    protected final WebClient webClient;
+    protected final DateFormat dateFormat;
+    protected final ObjectMapper objectMapper;
 
     protected Map<String, Authentication> authentications;
 
-    protected DateFormat dateFormat;
-    protected DateFormat datetimeFormat;
-    protected boolean lenientDatetimeFormat;
-    protected int dateLength;
 
-    protected InputStream sslCaCert;
-    protected boolean verifyingSsl;
-    protected KeyManager[] keyManagers;
-
-    protected OkHttpClient httpClient;
-    protected JSON json;
-
-    protected HttpLoggingInterceptor loggingInterceptor;
-
-    /**
-     * Basic constructor for ApiClient
-     */
     public ApiClient() {
-        init();
-        initHttpClient();
-
-        // Setup authentications (key: authentication name, value: authentication).
-        authentications.put("KeyPair", new HttpBearerAuth("bearer"));
-        authentications.put("ExternalOAuth", new HttpBearerAuth("bearer"));
-        authentications.put("SnowflakeOAuth", new OAuth());
-        // Prevent the authentications from being modified.
-        authentications = Collections.unmodifiableMap(authentications);
+        this.dateFormat = createDefaultDateFormat();
+        this.objectMapper = createDefaultObjectMapper(this.dateFormat);
+        this.webClient = buildWebClient(this.objectMapper);
+        this.init();
     }
 
-    /**
-     * Basic constructor with custom OkHttpClient
-     *
-     * @param client a {@link okhttp3.OkHttpClient} object
-     */
-    public ApiClient(OkHttpClient client) {
-        init();
-
-        httpClient = client;
-
-        // Setup authentications (key: authentication name, value: authentication).
-        authentications.put("KeyPair", new HttpBearerAuth("bearer"));
-        authentications.put("ExternalOAuth", new HttpBearerAuth("bearer"));
-        authentications.put("SnowflakeOAuth", new OAuth());
-        // Prevent the authentications from being modified.
-        authentications = Collections.unmodifiableMap(authentications);
+    public ApiClient(WebClient webClient) {
+        this(Optional.ofNullable(webClient).orElseGet(() -> buildWebClient()), createDefaultDateFormat());
     }
 
-    /**
-     * Constructor for ApiClient to support access token retry on 401/403 configured with client ID
-     *
-     * @param clientId client ID
-     */
-    public ApiClient(String clientId) {
-        this(clientId, null, null);
+    public ApiClient(ObjectMapper mapper, DateFormat format) {
+        this(buildWebClient(mapper.copy()), format);
     }
 
-    /**
-     * Constructor for ApiClient to support access token retry on 401/403 configured with client ID and additional parameters
-     *
-     * @param clientId client ID
-     * @param parameters a {@link java.util.Map} of parameters
-     */
-    public ApiClient(String clientId, Map<String, String> parameters) {
-        this(clientId, null, parameters);
+    public ApiClient(WebClient webClient, ObjectMapper mapper, DateFormat format) {
+        this(Optional.ofNullable(webClient).orElseGet(() -> buildWebClient(mapper.copy())), format);
     }
 
-    /**
-     * Constructor for ApiClient to support access token retry on 401/403 configured with client ID, secret, and additional parameters
-     *
-     * @param clientId client ID
-     * @param clientSecret client secret
-     * @param parameters a {@link java.util.Map} of parameters
-     */
-    public ApiClient(String clientId, String clientSecret, Map<String, String> parameters) {
-        this(null, clientId, clientSecret, parameters);
+    protected ApiClient(WebClient webClient, DateFormat format) {
+        this.webClient = webClient;
+        this.dateFormat = format;
+        this.objectMapper = createDefaultObjectMapper(format);
+        this.init();
     }
 
-    /**
-     * Constructor for ApiClient to support access token retry on 401/403 configured with base path, client ID, secret, and additional parameters
-     *
-     * @param basePath base path
-     * @param clientId client ID
-     * @param clientSecret client secret
-     * @param parameters a {@link java.util.Map} of parameters
-     */
-    public ApiClient(String basePath, String clientId, String clientSecret, Map<String, String> parameters) {
-        init();
-        if (basePath != null) {
-            this.basePath = basePath;
+    public static DateFormat createDefaultDateFormat() {
+        DateFormat dateFormat = new RFC3339DateFormat();
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return dateFormat;
+    }
+
+    public static ObjectMapper createDefaultObjectMapper(@Nullable DateFormat dateFormat) {
+        if (null == dateFormat) {
+            dateFormat = createDefaultDateFormat();
         }
-
-        String tokenUrl = "";
-        if (!"".equals(tokenUrl) && !URI.create(tokenUrl).isAbsolute()) {
-            URI uri = URI.create(getBasePath());
-            tokenUrl = uri.getScheme() + ":" +
-                (uri.getAuthority() != null ? "//" + uri.getAuthority() : "") +
-                tokenUrl;
-            if (!URI.create(tokenUrl).isAbsolute()) {
-                throw new IllegalArgumentException("OAuth2 token URL must be an absolute URL");
-            }
-        }
-        RetryingOAuth retryingOAuth = new RetryingOAuth(tokenUrl, clientId, OAuthFlow.IMPLICIT, clientSecret, parameters);
-        authentications.put(
-                "SnowflakeOAuth",
-                retryingOAuth
-        );
-        initHttpClient(Collections.<Interceptor>singletonList(retryingOAuth));
-        // Setup authentications (key: authentication name, value: authentication).
-        authentications.put("KeyPair", new HttpBearerAuth("bearer"));
-        authentications.put("ExternalOAuth", new HttpBearerAuth("bearer"));
-
-        // Prevent the authentications from being modified.
-        authentications = Collections.unmodifiableMap(authentications);
-    }
-
-    protected void initHttpClient() {
-        initHttpClient(Collections.<Interceptor>emptyList());
-    }
-
-    protected void initHttpClient(List<Interceptor> interceptors) {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        builder.addNetworkInterceptor(getProgressInterceptor());
-        for (Interceptor interceptor: interceptors) {
-            builder.addInterceptor(interceptor);
-        }
-
-        httpClient = builder.build();
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setDateFormat(dateFormat);
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        JsonNullableModule jnm = new JsonNullableModule();
+        mapper.registerModule(jnm);
+        return mapper;
     }
 
     protected void init() {
-        verifyingSsl = true;
-
-        json = new JSON();
-
-        // Set default User-Agent.
-        setUserAgent("OpenAPI-Generator/0.1.0/java");
-
+        // Setup authentications (key: authentication name, value: authentication).
         authentications = new HashMap<String, Authentication>();
+        authentications.put("KeyPair", new HttpBearerAuth("bearer"));
+        authentications.put("ExternalOAuth", new HttpBearerAuth("bearer"));
+        authentications.put("SnowflakeOAuth", new OAuth());
+        // Prevent the authentications from being modified.
+        authentications = Collections.unmodifiableMap(authentications);
     }
 
     /**
-     * Get base path
-     *
-     * @return Base path
+    * Build the WebClientBuilder used to make WebClient.
+    * @param mapper ObjectMapper used for serialize/deserialize
+    * @return WebClient
+    */
+    public static WebClient.Builder buildWebClientBuilder(ObjectMapper mapper) {
+        ExchangeStrategies strategies = ExchangeStrategies
+            .builder()
+            .codecs(clientDefaultCodecsConfigurer -> {
+                clientDefaultCodecsConfigurer.defaultCodecs().jackson2JsonEncoder(new Jackson2JsonEncoder(mapper, MediaType.APPLICATION_JSON));
+                clientDefaultCodecsConfigurer.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(mapper, MediaType.APPLICATION_JSON));
+            }).build();
+        WebClient.Builder webClientBuilder = WebClient.builder().exchangeStrategies(strategies);
+        return webClientBuilder;
+    }
+
+    /**
+     * Build the WebClientBuilder used to make WebClient.
+     * @return WebClient
+     */
+    public static WebClient.Builder buildWebClientBuilder() {
+        return buildWebClientBuilder(createDefaultObjectMapper(null));
+    }
+
+    /**
+     * Build the WebClient used to make HTTP requests.
+     * @param mapper ObjectMapper used for serialize/deserialize
+     * @return WebClient
+     */
+    public static WebClient buildWebClient(ObjectMapper mapper) {
+        return buildWebClientBuilder(mapper).build();
+    }
+
+    /**
+     * Build the WebClient used to make HTTP requests.
+     * @return WebClient
+     */
+    public static WebClient buildWebClient() {
+        return buildWebClientBuilder(createDefaultObjectMapper(null)).build();
+    }
+
+    /**
+     * Get the current base path
+     * @return String the base path
      */
     public String getBasePath() {
         return basePath;
     }
 
     /**
-     * Set base path
-     *
-     * @param basePath Base path of the URL (e.g https://org-account.snowflakecomputing.com)
-     * @return An instance of ApiClient
+     * Set the base path, which should include the host
+     * @param basePath the base path
+     * @return ApiClient this client
      */
     public ApiClient setBasePath(String basePath) {
         this.basePath = basePath;
-        this.serverIndex = null;
-        return this;
-    }
-
-    public List<ServerConfiguration> getServers() {
-        return servers;
-    }
-
-    public ApiClient setServers(List<ServerConfiguration> servers) {
-        this.servers = servers;
-        return this;
-    }
-
-    public Integer getServerIndex() {
-        return serverIndex;
-    }
-
-    public ApiClient setServerIndex(Integer serverIndex) {
-        this.serverIndex = serverIndex;
-        return this;
-    }
-
-    public Map<String, String> getServerVariables() {
-        return serverVariables;
-    }
-
-    public ApiClient setServerVariables(Map<String, String> serverVariables) {
-        this.serverVariables = serverVariables;
-        return this;
-    }
-
-    /**
-     * Get HTTP client
-     *
-     * @return An instance of OkHttpClient
-     */
-    public OkHttpClient getHttpClient() {
-        return httpClient;
-    }
-
-    /**
-     * Set HTTP client, which must never be null.
-     *
-     * @param newHttpClient An instance of OkHttpClient
-     * @return ApiClient
-     * @throws java.lang.NullPointerException when newHttpClient is null
-     */
-    public ApiClient setHttpClient(OkHttpClient newHttpClient) {
-        this.httpClient = Objects.requireNonNull(newHttpClient, "HttpClient must not be null!");
-        return this;
-    }
-
-    /**
-     * Get JSON
-     *
-     * @return JSON object
-     */
-    public JSON getJSON() {
-        return json;
-    }
-
-    /**
-     * Set JSON
-     *
-     * @param json JSON object
-     * @return Api client
-     */
-    public ApiClient setJSON(JSON json) {
-        this.json = json;
-        return this;
-    }
-
-    /**
-     * True if isVerifyingSsl flag is on
-     *
-     * @return True if isVerifySsl flag is on
-     */
-    public boolean isVerifyingSsl() {
-        return verifyingSsl;
-    }
-
-    /**
-     * Configure whether to verify certificate and hostname when making https requests.
-     * Default to true.
-     * NOTE: Do NOT set to false in production code, otherwise you would face multiple types of cryptographic attacks.
-     *
-     * @param verifyingSsl True to verify TLS/SSL connection
-     * @return ApiClient
-     */
-    public ApiClient setVerifyingSsl(boolean verifyingSsl) {
-        this.verifyingSsl = verifyingSsl;
-        applySslSettings();
-        return this;
-    }
-
-    /**
-     * Get SSL CA cert.
-     *
-     * @return Input stream to the SSL CA cert
-     */
-    public InputStream getSslCaCert() {
-        return sslCaCert;
-    }
-
-    /**
-     * Configure the CA certificate to be trusted when making https requests.
-     * Use null to reset to default.
-     *
-     * @param sslCaCert input stream for SSL CA cert
-     * @return ApiClient
-     */
-    public ApiClient setSslCaCert(InputStream sslCaCert) {
-        this.sslCaCert = sslCaCert;
-        applySslSettings();
-        return this;
-    }
-
-    /**
-     * <p>Getter for the field <code>keyManagers</code>.</p>
-     *
-     * @return an array of {@link javax.net.ssl.KeyManager} objects
-     */
-    public KeyManager[] getKeyManagers() {
-        return keyManagers;
-    }
-
-    /**
-     * Configure client keys to use for authorization in an SSL session.
-     * Use null to reset to default.
-     *
-     * @param managers The KeyManagers to use
-     * @return ApiClient
-     */
-    public ApiClient setKeyManagers(KeyManager[] managers) {
-        this.keyManagers = managers;
-        applySslSettings();
-        return this;
-    }
-
-    /**
-     * <p>Getter for the field <code>dateFormat</code>.</p>
-     *
-     * @return a {@link java.text.DateFormat} object
-     */
-    public DateFormat getDateFormat() {
-        return dateFormat;
-    }
-
-    /**
-     * <p>Setter for the field <code>dateFormat</code>.</p>
-     *
-     * @param dateFormat a {@link java.text.DateFormat} object
-     * @return a {@link eu.openanalytics.containerproxy.backend.spcs.client.ApiClient} object
-     */
-    public ApiClient setDateFormat(DateFormat dateFormat) {
-        JSON.setDateFormat(dateFormat);
-        return this;
-    }
-
-    /**
-     * <p>Set SqlDateFormat.</p>
-     *
-     * @param dateFormat a {@link java.text.DateFormat} object
-     * @return a {@link eu.openanalytics.containerproxy.backend.spcs.client.ApiClient} object
-     */
-    public ApiClient setSqlDateFormat(DateFormat dateFormat) {
-        JSON.setSqlDateFormat(dateFormat);
-        return this;
-    }
-
-    /**
-     * <p>Set OffsetDateTimeFormat.</p>
-     *
-     * @param dateFormat a {@link java.time.format.DateTimeFormatter} object
-     * @return a {@link eu.openanalytics.containerproxy.backend.spcs.client.ApiClient} object
-     */
-    public ApiClient setOffsetDateTimeFormat(DateTimeFormatter dateFormat) {
-        JSON.setOffsetDateTimeFormat(dateFormat);
-        return this;
-    }
-
-    /**
-     * <p>Set LocalDateFormat.</p>
-     *
-     * @param dateFormat a {@link java.time.format.DateTimeFormatter} object
-     * @return a {@link eu.openanalytics.containerproxy.backend.spcs.client.ApiClient} object
-     */
-    public ApiClient setLocalDateFormat(DateTimeFormatter dateFormat) {
-        JSON.setLocalDateFormat(dateFormat);
-        return this;
-    }
-
-    /**
-     * <p>Set LenientOnJson.</p>
-     *
-     * @param lenientOnJson a boolean
-     * @return a {@link eu.openanalytics.containerproxy.backend.spcs.client.ApiClient} object
-     */
-    public ApiClient setLenientOnJson(boolean lenientOnJson) {
-        JSON.setLenientOnJson(lenientOnJson);
         return this;
     }
 
     /**
      * Get authentications (key: authentication name, value: authentication).
-     *
-     * @return Map of authentication objects
+     * @return Map the currently configured authentication types
      */
     public Map<String, Authentication> getAuthentications() {
         return authentications;
@@ -466,18 +247,9 @@ public class ApiClient {
      * @param bearerToken Bearer token
      */
     public void setBearerToken(String bearerToken) {
-        setBearerToken(() -> bearerToken);
-    }
-
-    /**
-     * Helper method to set the supplier of access tokens for Bearer authentication.
-     *
-     * @param tokenSupplier The supplier of bearer tokens
-     */
-    public void setBearerToken(Supplier<String> tokenSupplier) {
         for (Authentication auth : authentications.values()) {
             if (auth instanceof HttpBearerAuth) {
-                ((HttpBearerAuth) auth).setBearerToken(tokenSupplier);
+                ((HttpBearerAuth) auth).setBearerToken(bearerToken);
                 return;
             }
         }
@@ -486,8 +258,7 @@ public class ApiClient {
 
     /**
      * Helper method to set username for the first HTTP basic authentication.
-     *
-     * @param username Username
+     * @param username the username
      */
     public void setUsername(String username) {
         for (Authentication auth : authentications.values()) {
@@ -501,8 +272,7 @@ public class ApiClient {
 
     /**
      * Helper method to set password for the first HTTP basic authentication.
-     *
-     * @param password Password
+     * @param password the password
      */
     public void setPassword(String password) {
         for (Authentication auth : authentications.values()) {
@@ -516,8 +286,7 @@ public class ApiClient {
 
     /**
      * Helper method to set API key value for the first API key authentication.
-     *
-     * @param apiKey API key
+     * @param apiKey the API key
      */
     public void setApiKey(String apiKey) {
         for (Authentication auth : authentications.values()) {
@@ -531,8 +300,7 @@ public class ApiClient {
 
     /**
      * Helper method to set API key prefix for the first API key authentication.
-     *
-     * @param apiKeyPrefix API key prefix
+     * @param apiKeyPrefix the API key prefix
      */
     public void setApiKeyPrefix(String apiKeyPrefix) {
         for (Authentication auth : authentications.values()) {
@@ -546,8 +314,7 @@ public class ApiClient {
 
     /**
      * Helper method to set access token for the first OAuth2 authentication.
-     *
-     * @param accessToken Access token
+     * @param accessToken the access token
      */
     public void setAccessToken(String accessToken) {
         for (Authentication auth : authentications.values()) {
@@ -560,35 +327,9 @@ public class ApiClient {
     }
 
     /**
-     * Helper method to set credentials for AWSV4 Signature
-     *
-     * @param accessKey Access Key
-     * @param secretKey Secret Key
-     * @param region Region
-     * @param service Service to access to
-     */
-    public void setAWS4Configuration(String accessKey, String secretKey, String region, String service) {
-        throw new RuntimeException("No AWS4 authentication configured!");
-    }
-
-    /**
-     * Helper method to set credentials for AWSV4 Signature
-     *
-     * @param accessKey Access Key
-     * @param secretKey Secret Key
-     * @param sessionToken Session Token
-     * @param region Region
-     * @param service Service to access to
-     */
-    public void setAWS4Configuration(String accessKey, String secretKey, String sessionToken, String region, String service) {
-        throw new RuntimeException("No AWS4 authentication configured!");
-    }
-
-    /**
      * Set the User-Agent header's value (by adding to the default header map).
-     *
-     * @param userAgent HTTP request's user agent
-     * @return ApiClient
+     * @param userAgent the user agent string
+     * @return ApiClient this client
      */
     public ApiClient setUserAgent(String userAgent) {
         addDefaultHeader("User-Agent", userAgent);
@@ -598,183 +339,91 @@ public class ApiClient {
     /**
      * Add a default header.
      *
-     * @param key The header's key
+     * @param name The header's name
      * @param value The header's value
-     * @return ApiClient
+     * @return ApiClient this client
      */
-    public ApiClient addDefaultHeader(String key, String value) {
-        defaultHeaderMap.put(key, value);
+    public ApiClient addDefaultHeader(String name, String value) {
+        defaultHeaders.set(name, value);
         return this;
     }
 
     /**
      * Add a default cookie.
      *
-     * @param key The cookie's key
+     * @param name The cookie's name
      * @param value The cookie's value
-     * @return ApiClient
+     * @return ApiClient this client
      */
-    public ApiClient addDefaultCookie(String key, String value) {
-        defaultCookieMap.put(key, value);
-        return this;
-    }
-
-    /**
-     * Check that whether debugging is enabled for this API client.
-     *
-     * @return True if debugging is enabled, false otherwise.
-     */
-    public boolean isDebugging() {
-        return debugging;
-    }
-
-    /**
-     * Enable/disable debugging for this API client.
-     *
-     * @param debugging To enable (true) or disable (false) debugging
-     * @return ApiClient
-     */
-    public ApiClient setDebugging(boolean debugging) {
-        if (debugging != this.debugging) {
-            if (debugging) {
-                loggingInterceptor = new HttpLoggingInterceptor();
-                loggingInterceptor.setLevel(Level.BODY);
-                httpClient = httpClient.newBuilder().addInterceptor(loggingInterceptor).build();
-            } else {
-                final OkHttpClient.Builder builder = httpClient.newBuilder();
-                builder.interceptors().remove(loggingInterceptor);
-                httpClient = builder.build();
-                loggingInterceptor = null;
-            }
+    public ApiClient addDefaultCookie(String name, String value) {
+        if (defaultCookies.containsKey(name)) {
+            defaultCookies.remove(name);
         }
-        this.debugging = debugging;
+        defaultCookies.add(name, value);
         return this;
     }
 
     /**
-     * The path of temporary folder used to store downloaded files from endpoints
-     * with file response. The default value is <code>null</code>, i.e. using
-     * the system's default temporary folder.
-     *
-     * @see <a href="https://docs.oracle.com/javase/7/docs/api/java/nio/file/Files.html#createTempFile(java.lang.String,%20java.lang.String,%20java.nio.file.attribute.FileAttribute...)">createTempFile</a>
-     * @return Temporary folder path
+     * Get the date format used to parse/format date parameters.
+     * @return DateFormat format
      */
-    public String getTempFolderPath() {
-        return tempFolderPath;
+    public DateFormat getDateFormat() {
+        return dateFormat;
     }
 
     /**
-     * Set the temporary folder path (for downloading files)
-     *
-     * @param tempFolderPath Temporary folder path
-     * @return ApiClient
+     * Parse the given string into Date object.
      */
-    public ApiClient setTempFolderPath(String tempFolderPath) {
-        this.tempFolderPath = tempFolderPath;
-        return this;
-    }
-
-    /**
-     * Get connection timeout (in milliseconds).
-     *
-     * @return Timeout in milliseconds
-     */
-    public int getConnectTimeout() {
-        return httpClient.connectTimeoutMillis();
-    }
-
-    /**
-     * Sets the connect timeout (in milliseconds).
-     * A value of 0 means no timeout, otherwise values must be between 1 and
-     * {@link java.lang.Integer#MAX_VALUE}.
-     *
-     * @param connectionTimeout connection timeout in milliseconds
-     * @return Api client
-     */
-    public ApiClient setConnectTimeout(int connectionTimeout) {
-        httpClient = httpClient.newBuilder().connectTimeout(connectionTimeout, TimeUnit.MILLISECONDS).build();
-        return this;
-    }
-
-    /**
-     * Get read timeout (in milliseconds).
-     *
-     * @return Timeout in milliseconds
-     */
-    public int getReadTimeout() {
-        return httpClient.readTimeoutMillis();
-    }
-
-    /**
-     * Sets the read timeout (in milliseconds).
-     * A value of 0 means no timeout, otherwise values must be between 1 and
-     * {@link java.lang.Integer#MAX_VALUE}.
-     *
-     * @param readTimeout read timeout in milliseconds
-     * @return Api client
-     */
-    public ApiClient setReadTimeout(int readTimeout) {
-        httpClient = httpClient.newBuilder().readTimeout(readTimeout, TimeUnit.MILLISECONDS).build();
-        return this;
-    }
-
-    /**
-     * Get write timeout (in milliseconds).
-     *
-     * @return Timeout in milliseconds
-     */
-    public int getWriteTimeout() {
-        return httpClient.writeTimeoutMillis();
-    }
-
-    /**
-     * Sets the write timeout (in milliseconds).
-     * A value of 0 means no timeout, otherwise values must be between 1 and
-     * {@link java.lang.Integer#MAX_VALUE}.
-     *
-     * @param writeTimeout connection timeout in milliseconds
-     * @return Api client
-     */
-    public ApiClient setWriteTimeout(int writeTimeout) {
-        httpClient = httpClient.newBuilder().writeTimeout(writeTimeout, TimeUnit.MILLISECONDS).build();
-        return this;
-    }
-
-    /**
-     * Helper method to configure the token endpoint of the first oauth found in the apiAuthorizations (there should be only one)
-     *
-     * @return Token request builder
-     */
-    public TokenRequestBuilder getTokenEndPoint() {
-        for (Authentication apiAuth : authentications.values()) {
-            if (apiAuth instanceof RetryingOAuth) {
-                RetryingOAuth retryingOAuth = (RetryingOAuth) apiAuth;
-                return retryingOAuth.getTokenRequestBuilder();
-            }
+    public Date parseDate(String str) {
+        try {
+            return dateFormat.parse(str);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
-        return null;
+    }
+
+    /**
+     * Format the given Date object into string.
+     */
+    public String formatDate(Date date) {
+        return dateFormat.format(date);
+    }
+
+    /**
+     * Get the ObjectMapper used to make HTTP requests.
+     * @return ObjectMapper objectMapper
+     */
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+
+    /**
+     * Get the WebClient used to make HTTP requests.
+     * @return WebClient webClient
+     */
+    public WebClient getWebClient() {
+        return webClient;
     }
 
     /**
      * Format the given parameter object into string.
-     *
-     * @param param Parameter
-     * @return String representation of the parameter
+     * @param param the object to convert
+     * @return String the parameter represented as a String
      */
     public String parameterToString(Object param) {
         if (param == null) {
             return "";
-        } else if (param instanceof Date || param instanceof OffsetDateTime || param instanceof LocalDate) {
-            //Serialize to json string and remove the " enclosing characters
-            String jsonStr = JSON.serialize(param);
-            return jsonStr.substring(1, jsonStr.length() - 1);
+        } else if (param instanceof Date) {
+            return formatDate( (Date) param);
+        } else if (param instanceof OffsetDateTime) {
+            return formatOffsetDateTime((OffsetDateTime) param);
         } else if (param instanceof Collection) {
             StringBuilder b = new StringBuilder();
-            for (Object o : (Collection) param) {
-                if (b.length() > 0) {
+            for(Object o : (Collection<?>) param) {
+                if(b.length() > 0) {
                     b.append(",");
                 }
-                b.append(o);
+                b.append(String.valueOf(o));
             }
             return b.toString();
         } else {
@@ -783,686 +432,317 @@ public class ApiClient {
     }
 
     /**
-     * Formats the specified query parameter to a list containing a single {@code Pair} object.
-     *
-     * Note that {@code value} must not be a collection.
-     *
-     * @param name The name of the parameter.
-     * @param value The value of the parameter.
-     * @return A list containing a single {@code Pair} object.
-     */
-    public List<Pair> parameterToPair(String name, Object value) {
-        List<Pair> params = new ArrayList<Pair>();
-
-        // preconditions
-        if (name == null || name.isEmpty() || value == null || value instanceof Collection) {
-            return params;
+    * Converts a parameter to a {@link MultiValueMap} containing Json-serialized values for use in REST requests
+    * @param collectionFormat The format to convert to
+    * @param name The name of the parameter
+    * @param value The parameter's value
+    * @return a Map containing the Json-serialized String value(s) of the input parameter
+    */
+    public MultiValueMap<String, String> parameterToMultiValueMapJson(CollectionFormat collectionFormat, String name, Object value) {
+        Collection<?> valueCollection;
+        if (value instanceof Collection) {
+            valueCollection = (Collection<?>) value;
+        } else {
+            try {
+                return parameterToMultiValueMap(collectionFormat, name, objectMapper.writeValueAsString(value));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        params.add(new Pair(name, parameterToString(value)));
-        return params;
+        List<String> values = new ArrayList<>();
+        for(Object o : valueCollection) {
+            try {
+                values.add(objectMapper.writeValueAsString(o));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return parameterToMultiValueMap(collectionFormat, name, "[" + StringUtils.collectionToDelimitedString(values, collectionFormat.separator) + "]");
     }
 
     /**
-     * Formats the specified collection query parameters to a list of {@code Pair} objects.
-     *
-     * Note that the values of each of the returned Pair objects are percent-encoded.
-     *
-     * @param collectionFormat The collection format of the parameter.
-     * @param name The name of the parameter.
-     * @param value The value of the parameter.
-     * @return A list of {@code Pair} objects.
+     * Converts a parameter to a {@link MultiValueMap} for use in REST requests
+     * @param collectionFormat The format to convert to
+     * @param name The name of the parameter
+     * @param value The parameter's value
+     * @return a Map containing the String value(s) of the input parameter
      */
-    public List<Pair> parameterToPairs(String collectionFormat, String name, Collection<?> value) {
-        List<Pair> params = new ArrayList<Pair>();
+    public MultiValueMap<String, String> parameterToMultiValueMap(CollectionFormat collectionFormat, String name, Object value) {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<String, String>();
 
-        // preconditions
-        if (name == null || name.isEmpty() || value == null || value.isEmpty()) {
+        if (name == null || name.isEmpty() || value == null) {
             return params;
         }
 
-        // create the params based on the collection format
-        if ("multi".equals(collectionFormat)) {
-            for (Object item : value) {
-                params.add(new Pair(name, escapeString(parameterToString(item))));
+        if(collectionFormat == null) {
+            collectionFormat = CollectionFormat.CSV;
+        }
+
+        if (value instanceof Map) {
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> valuesMap = (Map<String, Object>) value;
+            for (final Entry<String, Object> entry : valuesMap.entrySet()) {
+                params.add(entry.getKey(), parameterToString(entry.getValue()));
             }
             return params;
         }
 
-        // collectionFormat is assumed to be "csv" by default
-        String delimiter = ",";
-
-        // escape all delimiters except commas, which are URI reserved
-        // characters
-        if ("ssv".equals(collectionFormat)) {
-            delimiter = escapeString(" ");
-        } else if ("tsv".equals(collectionFormat)) {
-            delimiter = escapeString("\t");
-        } else if ("pipes".equals(collectionFormat)) {
-            delimiter = escapeString("|");
-        }
-
-        StringBuilder sb = new StringBuilder();
-        for (Object item : value) {
-            sb.append(delimiter);
-            sb.append(escapeString(parameterToString(item)));
-        }
-
-        params.add(new Pair(name, sb.substring(delimiter.length())));
-
-        return params;
-    }
-
-   /**
-    * Formats the specified free-form query parameters to a list of {@code Pair} objects.
-    *
-    * @param value The free-form query parameters.
-    * @return A list of {@code Pair} objects.
-    */
-    public List<Pair> freeFormParameterToPairs(Object value) {
-        List<Pair> params = new ArrayList<>();
-
-        // preconditions
-        if (value == null || !(value instanceof Map )) {
+        Collection<?> valueCollection = null;
+        if (value instanceof Collection) {
+            valueCollection = (Collection<?>) value;
+        } else {
+            params.add(name, parameterToString(value));
             return params;
         }
 
-        @SuppressWarnings("unchecked")
-        final Map<String, Object> valuesMap = (Map<String, Object>) value;
-
-        for (Map.Entry<String, Object> entry : valuesMap.entrySet()) {
-            params.add(new Pair(entry.getKey(), parameterToString(entry.getValue())));
+        if (valueCollection.isEmpty()){
+            return params;
         }
+
+        if (collectionFormat.equals(CollectionFormat.MULTI)) {
+            for (Object item : valueCollection) {
+                params.add(name, parameterToString(item));
+            }
+            return params;
+        }
+
+        List<String> values = new ArrayList<String>();
+        for(Object o : valueCollection) {
+            values.add(parameterToString(o));
+        }
+        params.add(name, collectionFormat.collectionToString(values));
 
         return params;
     }
 
-
     /**
-     * Formats the specified collection path parameter to a string value.
-     *
-     * @param collectionFormat The collection format of the parameter.
-     * @param value The value of the parameter.
-     * @return String representation of the parameter
-     */
-    public String collectionPathParameterToString(String collectionFormat, Collection value) {
-        // create the value based on the collection format
-        if ("multi".equals(collectionFormat)) {
-            // not valid for path params
-            return parameterToString(value);
+    * Check if the given {@code String} is a JSON MIME.
+    * @param mediaType the input MediaType
+    * @return boolean true if the MediaType represents JSON, false otherwise
+    */
+    public boolean isJsonMime(String mediaType) {
+        // "* / *" is default to JSON
+        if ("*/*".equals(mediaType)) {
+            return true;
         }
 
-        // collectionFormat is assumed to be "csv" by default
-        String delimiter = ",";
-
-        if ("ssv".equals(collectionFormat)) {
-            delimiter = " ";
-        } else if ("tsv".equals(collectionFormat)) {
-            delimiter = "\t";
-        } else if ("pipes".equals(collectionFormat)) {
-            delimiter = "|";
+        try {
+            return isJsonMime(MediaType.parseMediaType(mediaType));
+        } catch (InvalidMediaTypeException e) {
         }
-
-        StringBuilder sb = new StringBuilder() ;
-        for (Object item : value) {
-            sb.append(delimiter);
-            sb.append(parameterToString(item));
-        }
-
-        return sb.substring(delimiter.length());
-    }
-
-    /**
-     * Sanitize filename by removing path.
-     * e.g. ../../sun.gif becomes sun.gif
-     *
-     * @param filename The filename to be sanitized
-     * @return The sanitized filename
-     */
-    public String sanitizeFilename(String filename) {
-        return filename.replaceFirst("^.*[/\\\\]", "");
+        return false;
     }
 
     /**
      * Check if the given MIME is a JSON MIME.
      * JSON MIME examples:
-     *   application/json
-     *   application/json; charset=UTF8
-     *   APPLICATION/JSON
-     *   application/vnd.company+json
-     * "* / *" is also default to JSON
-     * @param mime MIME (Multipurpose Internet Mail Extensions)
-     * @return True if the given MIME is JSON, false otherwise.
+     *     application/json
+     *     application/json; charset=UTF8
+     *     APPLICATION/JSON
+     * @param mediaType the input MediaType
+     * @return boolean true if the MediaType represents JSON, false otherwise
      */
-    public boolean isJsonMime(String mime) {
-        String jsonMime = "(?i)^(application/json|[^;/ \t]+/[^;/ \t]+[+]json)[ \t]*(;.*)?$";
-        return mime != null && (mime.matches(jsonMime) || mime.equals("*/*"));
+    public boolean isJsonMime(MediaType mediaType) {
+        return mediaType != null && (MediaType.APPLICATION_JSON.isCompatibleWith(mediaType) || mediaType.getSubtype().matches("^.*(\\+json|ndjson)[;]?\\s*$"));
+    }
+
+    /**
+    * Check if the given {@code String} is a Problem JSON MIME (RFC-7807).
+    * @param mediaType the input MediaType
+    * @return boolean true if the MediaType represents Problem JSON, false otherwise
+    */
+    public boolean isProblemJsonMime(String mediaType) {
+        return "application/problem+json".equalsIgnoreCase(mediaType);
     }
 
     /**
      * Select the Accept header's value from the given accepts array:
-     *   if JSON exists in the given array, use it;
-     *   otherwise use all of them (joining into a string)
+     *     if JSON exists in the given array, use it;
+     *     otherwise use all of them (joining into a string)
      *
      * @param accepts The accepts array to select from
-     * @return The Accept header to use. If the given array is empty,
-     *   null will be returned (not to set the Accept header explicitly).
+     * @return List The list of MediaTypes to use for the Accept header
      */
-    public String selectHeaderAccept(String[] accepts) {
+    public List<MediaType> selectHeaderAccept(String[] accepts) {
         if (accepts.length == 0) {
             return null;
         }
         for (String accept : accepts) {
-            if (isJsonMime(accept)) {
-                return accept;
+            MediaType mediaType = MediaType.parseMediaType(accept);
+            if (isJsonMime(mediaType) && !isProblemJsonMime(accept)) {
+                return Collections.singletonList(mediaType);
             }
         }
-        return StringUtil.join(accepts, ",");
+        return MediaType.parseMediaTypes(StringUtils.arrayToCommaDelimitedString(accepts));
     }
 
     /**
      * Select the Content-Type header's value from the given array:
-     *   if JSON exists in the given array, use it;
-     *   otherwise use the first one of the array.
+     *     if JSON exists in the given array, use it;
+     *     otherwise use the first one of the array.
      *
      * @param contentTypes The Content-Type array to select from
-     * @return The Content-Type header to use. If the given array is empty,
-     *   returns null. If it matches "any", JSON will be used.
+     * @return MediaType The Content-Type header to use. If the given array is empty, null will be returned.
      */
-    public String selectHeaderContentType(String[] contentTypes) {
+    public MediaType selectHeaderContentType(String[] contentTypes) {
         if (contentTypes.length == 0) {
             return null;
         }
-
-        if (contentTypes[0].equals("*/*")) {
-            return "application/json";
-        }
-
         for (String contentType : contentTypes) {
-            if (isJsonMime(contentType)) {
-                return contentType;
+            MediaType mediaType = MediaType.parseMediaType(contentType);
+            if (isJsonMime(mediaType)) {
+                return mediaType;
             }
         }
-
-        return contentTypes[0];
+        return MediaType.parseMediaType(contentTypes[0]);
     }
 
     /**
-     * Escape the given string to be used as URL query value.
-     *
-     * @param str String to be escaped
-     * @return Escaped string
+     * Select the body to use for the request
+     * @param obj the body object
+     * @param formParams the form parameters
+     * @param contentType the content type of the request
+     * @return Object the selected body
      */
-    public String escapeString(String str) {
-        try {
-            return URLEncoder.encode(str, "utf8").replaceAll("\\+", "%20");
-        } catch (UnsupportedEncodingException e) {
-            return str;
-        }
-    }
+    protected BodyInserter<?, ? super ClientHttpRequest> selectBody(Object obj, MultiValueMap<String, Object> formParams, MediaType contentType) {
+        if(MediaType.APPLICATION_FORM_URLENCODED.equals(contentType)) {
+            MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
 
-    /**
-     * Deserialize response body to Java object, according to the return type and
-     * the Content-Type response header.
-     *
-     * @param <T> Type
-     * @param response HTTP response
-     * @param returnType The type of the Java object
-     * @return The deserialized Java object
-     * @throws eu.openanalytics.containerproxy.backend.spcs.client.ApiException If fail to deserialize response body, i.e. cannot read response body
-     *   or the Content-Type of the response is not supported.
-     */
-    @SuppressWarnings("unchecked")
-    public <T> T deserialize(Response response, Type returnType) throws ApiException {
-        if (response == null || returnType == null) {
-            return null;
-        }
+            formParams
+                    .toSingleValueMap()
+                    .entrySet()
+                    .forEach(es -> map.add(es.getKey(), String.valueOf(es.getValue())));
 
-        if ("byte[]".equals(returnType.toString())) {
-            // Handle binary response (byte array).
-            try {
-                return (T) response.body().bytes();
-            } catch (IOException e) {
-                throw new ApiException(e);
-            }
-        } else if (returnType.equals(File.class)) {
-            // Handle file downloading.
-            return (T) downloadFileFromResponse(response);
-        }
-
-        ResponseBody respBody = response.body();
-        if (respBody == null) {
-            return null;
-        }
-
-        String contentType = response.headers().get("Content-Type");
-        if (contentType == null) {
-            // ensuring a default content type
-            contentType = "application/json";
-        }
-        try {
-            if (isJsonMime(contentType)) {
-                return JSON.deserialize(respBody.byteStream(), returnType);
-            } else if (returnType.equals(String.class)) {
-                String respBodyString = respBody.string();
-                if (respBodyString.isEmpty()) {
-                    return null;
-                }
-                // Expecting string, return the raw response body.
-                return (T) respBodyString;
-            } else {
-                throw new ApiException(
-                    "Content type \"" + contentType + "\" is not supported for type: " + returnType,
-                    response.code(),
-                    response.headers().toMultimap(),
-                    response.body().string());
-            }
-        } catch (IOException e) {
-            throw new ApiException(e);
-        }
-    }
-
-    /**
-     * Serialize the given Java object into request body according to the object's
-     * class and the request Content-Type.
-     *
-     * @param obj The Java object
-     * @param contentType The request Content-Type
-     * @return The serialized request body
-     * @throws eu.openanalytics.containerproxy.backend.spcs.client.ApiException If fail to serialize the given object
-     */
-    public RequestBody serialize(Object obj, String contentType) throws ApiException {
-        if (obj instanceof byte[]) {
-            // Binary (byte array) body parameter support.
-            return RequestBody.create((byte[]) obj, MediaType.parse(contentType));
-        } else if (obj instanceof File) {
-            // File body parameter support.
-            return RequestBody.create((File) obj, MediaType.parse(contentType));
-        } else if ("text/plain".equals(contentType) && obj instanceof String) {
-            return RequestBody.create((String) obj, MediaType.parse(contentType));
-        } else if (isJsonMime(contentType)) {
-            String content;
-            if (obj != null) {
-                content = JSON.serialize(obj);
-            } else {
-                content = null;
-            }
-            return RequestBody.create(content, MediaType.parse(contentType));
-        } else if (obj instanceof String) {
-            return RequestBody.create((String) obj, MediaType.parse(contentType));
+            return BodyInserters.fromFormData(map);
+        } else if(MediaType.MULTIPART_FORM_DATA.equals(contentType)) {
+            return BodyInserters.fromMultipartData(formParams);
         } else {
-            throw new ApiException("Content type \"" + contentType + "\" is not supported");
+            return obj != null ? BodyInserters.fromValue(obj) : null;
         }
     }
 
     /**
-     * Download file from the given response.
+     * Invoke API by sending HTTP request with the given options.
      *
-     * @param response An instance of the Response object
-     * @throws eu.openanalytics.containerproxy.backend.spcs.client.ApiException If fail to read file content from response and write to disk
-     * @return Downloaded file
+     * @param <T> the return type to use
+     * @param path The sub-path of the HTTP URL
+     * @param method The request method
+     * @param pathParams The path parameters
+     * @param queryParams The query parameters
+     * @param body The request body object
+     * @param headerParams The header parameters
+     * @param formParams The form parameters
+     * @param accept The request's Accept header
+     * @param contentType The request's Content-Type header
+     * @param authNames The authentications to apply
+     * @param returnType The return type into which to deserialize the response
+     * @return The response body in chosen type
      */
-    public File downloadFileFromResponse(Response response) throws ApiException {
-        try {
-            File file = prepareDownloadFile(response);
-            BufferedSink sink = Okio.buffer(Okio.sink(file));
-            sink.writeAll(response.body().source());
-            sink.close();
-            return file;
-        } catch (IOException e) {
-            throw new ApiException(e);
-        }
+    public <T> ResponseSpec invokeAPI(String path, HttpMethod method, Map<String, Object> pathParams, MultiValueMap<String, String> queryParams, Object body, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams, MultiValueMap<String, Object> formParams, List<MediaType> accept, MediaType contentType, String[] authNames, ParameterizedTypeReference<T> returnType) throws RestClientException {
+        final WebClient.RequestBodySpec requestBuilder = prepareRequest(path, method, pathParams, queryParams, body, headerParams, cookieParams, formParams, accept, contentType, authNames);
+        return requestBuilder.retrieve();
     }
 
     /**
-     * Prepare file for download
-     *
-     * @param response An instance of the Response object
-     * @return Prepared file for the download
-     * @throws java.io.IOException If fail to prepare file for download
+     * Include queryParams in uriParams taking into account the paramName
+     * @param queryParams The query parameters
+     * @param uriParams The path parameters
+     * return templatized query string
      */
-    public File prepareDownloadFile(Response response) throws IOException {
-        String filename = null;
-        String contentDisposition = response.header("Content-Disposition");
-        if (contentDisposition != null && !"".equals(contentDisposition)) {
-            // Get filename from the Content-Disposition header.
-            Pattern pattern = Pattern.compile("filename=['\"]?([^'\"\\s]+)['\"]?");
-            Matcher matcher = pattern.matcher(contentDisposition);
-            if (matcher.find()) {
-                filename = sanitizeFilename(matcher.group(1));
-            }
-        }
-
-        String prefix = null;
-        String suffix = null;
-        if (filename == null) {
-            prefix = "download-";
-            suffix = "";
-        } else {
-            int pos = filename.lastIndexOf(".");
-            if (pos == -1) {
-                prefix = filename + "-";
-            } else {
-                prefix = filename.substring(0, pos) + "-";
-                suffix = filename.substring(pos);
-            }
-            // Files.createTempFile requires the prefix to be at least three characters long
-            if (prefix.length() < 3)
-                prefix = "download-";
-        }
-
-        if (tempFolderPath == null)
-            return Files.createTempFile(prefix, suffix).toFile();
-        else
-            return Files.createTempFile(Paths.get(tempFolderPath), prefix, suffix).toFile();
-    }
-
-    /**
-     * {@link #execute(Call, Type)}
-     *
-     * @param <T> Type
-     * @param call An instance of the Call object
-     * @return ApiResponse&lt;T&gt;
-     * @throws eu.openanalytics.containerproxy.backend.spcs.client.ApiException If fail to execute the call
-     */
-    public <T> ApiResponse<T> execute(Call call) throws ApiException {
-        return execute(call, null);
-    }
-
-    /**
-     * Execute HTTP call and deserialize the HTTP response body into the given return type.
-     *
-     * @param returnType The return type used to deserialize HTTP response body
-     * @param <T> The return type corresponding to (same with) returnType
-     * @param call Call
-     * @return ApiResponse object containing response status, headers and
-     *   data, which is a Java object deserialized from response body and would be null
-     *   when returnType is null.
-     * @throws eu.openanalytics.containerproxy.backend.spcs.client.ApiException If fail to execute the call
-     */
-    public <T> ApiResponse<T> execute(Call call, Type returnType) throws ApiException {
-        try {
-            Response response = call.execute();
-            T data = handleResponse(response, returnType);
-            return new ApiResponse<T>(response.code(), response.headers().toMultimap(), data);
-        } catch (IOException e) {
-            throw new ApiException(e);
-        }
-    }
-
-    /**
-     * {@link #executeAsync(Call, Type, ApiCallback)}
-     *
-     * @param <T> Type
-     * @param call An instance of the Call object
-     * @param callback ApiCallback&lt;T&gt;
-     */
-    public <T> void executeAsync(Call call, ApiCallback<T> callback) {
-        executeAsync(call, null, callback);
-    }
-
-    /**
-     * Execute HTTP call asynchronously.
-     *
-     * @param <T> Type
-     * @param call The callback to be executed when the API call finishes
-     * @param returnType Return type
-     * @param callback ApiCallback
-     * @see #execute(Call, Type)
-     */
-    @SuppressWarnings("unchecked")
-    public <T> void executeAsync(Call call, final Type returnType, final ApiCallback<T> callback) {
-        call.enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                callback.onFailure(new ApiException(e), 0, null);
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                T result;
-                try {
-                    result = (T) handleResponse(response, returnType);
-                } catch (ApiException e) {
-                    callback.onFailure(e, response.code(), response.headers().toMultimap());
-                    return;
-                } catch (Exception e) {
-                    callback.onFailure(new ApiException(e), response.code(), response.headers().toMultimap());
-                    return;
+    protected String generateQueryUri(MultiValueMap<String, String> queryParams, Map<String, Object> uriParams) {
+        StringBuilder queryBuilder = new StringBuilder();
+        queryParams.forEach((name, values) -> {
+            if (CollectionUtils.isEmpty(values)) {
+                if (queryBuilder.length() != 0) {
+                    queryBuilder.append('&');
                 }
-                callback.onSuccess(result, response.code(), response.headers().toMultimap());
+                queryBuilder.append(name);
+            } else {
+                int valueItemCounter = 0;
+                for (Object value : values) {
+                    if (queryBuilder.length() != 0) {
+                        queryBuilder.append('&');
+                    }
+                    queryBuilder.append(name);
+                    if (value != null) {
+                        String templatizedKey = name + valueItemCounter++;
+                        uriParams.put(templatizedKey, value.toString());
+                        queryBuilder.append('=').append("{").append(templatizedKey).append("}");
+                    }
+                }
             }
         });
+        return queryBuilder.toString();
     }
 
-    /**
-     * Handle the given response, return the deserialized object when the response is successful.
-     *
-     * @param <T> Type
-     * @param response Response
-     * @param returnType Return type
-     * @return Type
-     * @throws eu.openanalytics.containerproxy.backend.spcs.client.ApiException If the response has an unsuccessful status code or
-     *                      fail to deserialize the response body
-     */
-    public <T> T handleResponse(Response response, Type returnType) throws ApiException {
-        if (response.isSuccessful()) {
-            if (returnType == null || response.code() == 204) {
-                // returning null if the returnType is not defined,
-                // or the status code is 204 (No Content)
-                if (response.body() != null) {
-                    try {
-                        response.body().close();
-                    } catch (Exception e) {
-                        throw new ApiException(response.message(), e, response.code(), response.headers().toMultimap());
-                    }
-                }
-                return null;
-            } else {
-                return deserialize(response, returnType);
-            }
-        } else {
-            String respBody = null;
-            if (response.body() != null) {
-                try {
-                    respBody = response.body().string();
-                } catch (IOException e) {
-                    throw new ApiException(response.message(), e, response.code(), response.headers().toMultimap());
-                }
-            }
-            throw new ApiException(response.message(), response.code(), response.headers().toMultimap(), respBody);
-        }
-    }
+    protected WebClient.RequestBodySpec prepareRequest(String path, HttpMethod method, Map<String, Object> pathParams,
+        MultiValueMap<String, String> queryParams, Object body, HttpHeaders headerParams,
+        MultiValueMap<String, String> cookieParams, MultiValueMap<String, Object> formParams, List<MediaType> accept,
+        MediaType contentType, String[] authNames) {
+        updateParamsForAuth(authNames, queryParams, headerParams, cookieParams);
 
-    /**
-     * Build HTTP call with the given options.
-     *
-     * @param baseUrl The base URL
-     * @param path The sub-path of the HTTP URL
-     * @param method The request method, one of "GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH" and "DELETE"
-     * @param queryParams The query parameters
-     * @param collectionQueryParams The collection query parameters
-     * @param body The request body object
-     * @param headerParams The header parameters
-     * @param cookieParams The cookie parameters
-     * @param formParams The form parameters
-     * @param authNames The authentications to apply
-     * @param callback Callback for upload/download progress
-     * @return The HTTP call
-     * @throws eu.openanalytics.containerproxy.backend.spcs.client.ApiException If fail to serialize the request body object
-     */
-    public Call buildCall(String baseUrl, String path, String method, List<Pair> queryParams, List<Pair> collectionQueryParams, Object body, Map<String, String> headerParams, Map<String, String> cookieParams, Map<String, Object> formParams, String[] authNames, ApiCallback callback) throws ApiException {
-        Request request = buildRequest(baseUrl, path, method, queryParams, collectionQueryParams, body, headerParams, cookieParams, formParams, authNames, callback);
+        final UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(basePath).path(path);
 
-        return httpClient.newCall(request);
-    }
-
-    /**
-     * Build an HTTP request with the given options.
-     *
-     * @param baseUrl The base URL
-     * @param path The sub-path of the HTTP URL
-     * @param method The request method, one of "GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH" and "DELETE"
-     * @param queryParams The query parameters
-     * @param collectionQueryParams The collection query parameters
-     * @param body The request body object
-     * @param headerParams The header parameters
-     * @param cookieParams The cookie parameters
-     * @param formParams The form parameters
-     * @param authNames The authentications to apply
-     * @param callback Callback for upload/download progress
-     * @return The HTTP request
-     * @throws eu.openanalytics.containerproxy.backend.spcs.client.ApiException If fail to serialize the request body object
-     */
-    public Request buildRequest(String baseUrl, String path, String method, List<Pair> queryParams, List<Pair> collectionQueryParams, Object body, Map<String, String> headerParams, Map<String, String> cookieParams, Map<String, Object> formParams, String[] authNames, ApiCallback callback) throws ApiException {
-        final String url = buildUrl(baseUrl, path, queryParams, collectionQueryParams);
-
-        // prepare HTTP request body
-        RequestBody reqBody;
-        String contentType = headerParams.get("Content-Type");
-        String contentTypePure = contentType;
-        if (contentTypePure != null && contentTypePure.contains(";")) {
-            contentTypePure = contentType.substring(0, contentType.indexOf(";"));
-        }
-        if (!HttpMethod.permitsRequestBody(method)) {
-            reqBody = null;
-        } else if ("application/x-www-form-urlencoded".equals(contentTypePure)) {
-            reqBody = buildRequestBodyFormEncoding(formParams);
-        } else if ("multipart/form-data".equals(contentTypePure)) {
-            reqBody = buildRequestBodyMultipart(formParams);
-        } else if (body == null) {
-            if ("DELETE".equals(method)) {
-                // allow calling DELETE without sending a request body
-                reqBody = null;
-            } else {
-                // use an empty request body (for POST, PUT and PATCH)
-                reqBody = RequestBody.create("", contentType == null ? null : MediaType.parse(contentType));
-            }
-        } else {
-            reqBody = serialize(body, contentType);
-        }
-
-        List<Pair> updatedQueryParams = new ArrayList<>(queryParams);
-
-        // update parameters with authentication settings
-        updateParamsForAuth(authNames, updatedQueryParams, headerParams, cookieParams, requestBodyToString(reqBody), method, URI.create(url));
-
-        final Request.Builder reqBuilder = new Request.Builder().url(buildUrl(baseUrl, path, updatedQueryParams, collectionQueryParams));
-        processHeaderParams(headerParams, reqBuilder);
-        processCookieParams(cookieParams, reqBuilder);
-
-        // Associate callback with request (if not null) so interceptor can
-        // access it when creating ProgressResponseBody
-        reqBuilder.tag(callback);
-
-        Request request = null;
-
-        if (callback != null && reqBody != null) {
-            ProgressRequestBody progressRequestBody = new ProgressRequestBody(reqBody, callback);
-            request = reqBuilder.method(method, progressRequestBody).build();
-        } else {
-            request = reqBuilder.method(method, reqBody).build();
-        }
-
-        return request;
-    }
-
-    /**
-     * Build full URL by concatenating base path, the given sub path and query parameters.
-     *
-     * @param baseUrl The base URL
-     * @param path The sub path
-     * @param queryParams The query parameters
-     * @param collectionQueryParams The collection query parameters
-     * @return The full URL
-     */
-    public String buildUrl(String baseUrl, String path, List<Pair> queryParams, List<Pair> collectionQueryParams) {
-        final StringBuilder url = new StringBuilder();
-        if (baseUrl != null) {
-            url.append(baseUrl).append(path);
-        } else {
-            String baseURL;
-            if (serverIndex != null) {
-                if (serverIndex < 0 || serverIndex >= servers.size()) {
-                    throw new ArrayIndexOutOfBoundsException(String.format(
-                        Locale.ROOT,
-                        "Invalid index %d when selecting the host settings. Must be less than %d", serverIndex, servers.size()
-                    ));
-                }
-                baseURL = servers.get(serverIndex).URL(serverVariables);
-            } else {
-                baseURL = basePath;
-            }
-            url.append(baseURL).append(path);
-        }
+        String finalUri = builder.build(false).toUriString();
+        Map<String, Object> uriParams = new HashMap<>();
+        uriParams.putAll(pathParams);
 
         if (queryParams != null && !queryParams.isEmpty()) {
-            // support (constant) query string in `path`, e.g. "/posts?draft=1"
-            String prefix = path.contains("?") ? "&" : "?";
-            for (Pair param : queryParams) {
-                if (param.getValue() != null) {
-                    if (prefix != null) {
-                        url.append(prefix);
-                        prefix = null;
-                    } else {
-                        url.append("&");
-                    }
-                    String value = parameterToString(param.getValue());
-                    url.append(escapeString(param.getName())).append("=").append(escapeString(value));
-                }
-            }
+            //Include queryParams in uriParams taking into account the paramName
+            String queryUri = generateQueryUri(queryParams, uriParams);
+            //Append to finalUri the templatized query string like "?param1={param1Value}&.......
+            finalUri += "?" + queryUri;
         }
 
-        if (collectionQueryParams != null && !collectionQueryParams.isEmpty()) {
-            String prefix = url.toString().contains("?") ? "&" : "?";
-            for (Pair param : collectionQueryParams) {
-                if (param.getValue() != null) {
-                    if (prefix != null) {
-                        url.append(prefix);
-                        prefix = null;
-                    } else {
-                        url.append("&");
-                    }
-                    String value = parameterToString(param.getValue());
-                    // collection query parameter value already escaped as part of parameterToPairs
-                    url.append(escapeString(param.getName())).append("=").append(value);
-                }
-            }
+        final WebClient.RequestBodySpec requestBuilder = webClient.method(method).uri(finalUri, uriParams);
+
+        if (accept != null) {
+            requestBuilder.accept(accept.toArray(new MediaType[accept.size()]));
+        }
+        if(contentType != null) {
+            requestBuilder.contentType(contentType);
         }
 
-        return url.toString();
+        addHeadersToRequest(headerParams, requestBuilder);
+        addHeadersToRequest(defaultHeaders, requestBuilder);
+        addCookiesToRequest(cookieParams, requestBuilder);
+        addCookiesToRequest(defaultCookies, requestBuilder);
+
+        requestBuilder.attribute(URI_TEMPLATE_ATTRIBUTE, path);
+
+        requestBuilder.body(selectBody(body, formParams, contentType));
+        return requestBuilder;
     }
 
     /**
-     * Set header parameters to the request builder, including default headers.
-     *
-     * @param headerParams Header parameters in the form of Map
-     * @param reqBuilder Request.Builder
+     * Add headers to the request that is being built
+     * @param headers The headers to add
+     * @param requestBuilder The current request
      */
-    public void processHeaderParams(Map<String, String> headerParams, Request.Builder reqBuilder) {
-        for (Entry<String, String> param : headerParams.entrySet()) {
-            reqBuilder.header(param.getKey(), parameterToString(param.getValue()));
-        }
-        for (Entry<String, String> header : defaultHeaderMap.entrySet()) {
-            if (!headerParams.containsKey(header.getKey())) {
-                reqBuilder.header(header.getKey(), parameterToString(header.getValue()));
+    protected void addHeadersToRequest(HttpHeaders headers, WebClient.RequestBodySpec requestBuilder) {
+        for (Entry<String, List<String>> entry : headers.entrySet()) {
+            List<String> values = entry.getValue();
+            for(String value : values) {
+                if (value != null) {
+                    requestBuilder.header(entry.getKey(), value);
+                }
             }
         }
     }
 
     /**
-     * Set cookie parameters to the request builder, including default cookies.
-     *
-     * @param cookieParams Cookie parameters in the form of Map
-     * @param reqBuilder Request.Builder
+     * Add cookies to the request that is being built
+     * @param cookies The cookies to add
+     * @param requestBuilder The current request
      */
-    public void processCookieParams(Map<String, String> cookieParams, Request.Builder reqBuilder) {
-        for (Entry<String, String> param : cookieParams.entrySet()) {
-            reqBuilder.addHeader("Cookie", String.format(Locale.ROOT, "%s=%s", param.getKey(), param.getValue()));
-        }
-        for (Entry<String, String> param : defaultCookieMap.entrySet()) {
-            if (!cookieParams.containsKey(param.getKey())) {
-                reqBuilder.addHeader("Cookie", String.format(Locale.ROOT, "%s=%s", param.getKey(), param.getValue()));
+    protected void addCookiesToRequest(MultiValueMap<String, String> cookies, WebClient.RequestBodySpec requestBuilder) {
+        for (Entry<String, List<String>> entry : cookies.entrySet()) {
+            List<String> values = entry.getValue();
+            for(String value : values) {
+                if (value != null) {
+                    requestBuilder.cookie(entry.getKey(), value);
+                }
             }
         }
     }
@@ -1471,238 +751,39 @@ public class ApiClient {
      * Update query and header parameters based on authentication settings.
      *
      * @param authNames The authentications to apply
-     * @param queryParams List of query parameters
-     * @param headerParams Map of header parameters
-     * @param cookieParams Map of cookie parameters
-     * @param payload HTTP request body
-     * @param method HTTP method
-     * @param uri URI
-     * @throws eu.openanalytics.containerproxy.backend.spcs.client.ApiException If fails to update the parameters
+     * @param queryParams The query parameters
+     * @param headerParams The header parameters
+     * @param cookieParams the cookie parameters
      */
-    public void updateParamsForAuth(String[] authNames, List<Pair> queryParams, Map<String, String> headerParams,
-                                    Map<String, String> cookieParams, String payload, String method, URI uri) throws ApiException {
+    protected void updateParamsForAuth(String[] authNames, MultiValueMap<String, String> queryParams, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams) {
         for (String authName : authNames) {
             Authentication auth = authentications.get(authName);
             if (auth == null) {
-                throw new RuntimeException("Authentication undefined: " + authName);
+                throw new RestClientException("Authentication undefined: " + authName);
             }
-            auth.applyToParams(queryParams, headerParams, cookieParams, payload, method, uri);
+            auth.applyToParams(queryParams, headerParams, cookieParams);
         }
     }
 
     /**
-     * Build a form-encoding request body with the given form parameters.
-     *
-     * @param formParams Form parameters in the form of Map
-     * @return RequestBody
-     */
-    public RequestBody buildRequestBodyFormEncoding(Map<String, Object> formParams) {
-        okhttp3.FormBody.Builder formBuilder = new okhttp3.FormBody.Builder();
-        for (Entry<String, Object> param : formParams.entrySet()) {
-            formBuilder.add(param.getKey(), parameterToString(param.getValue()));
-        }
-        return formBuilder.build();
-    }
-
-    /**
-     * Build a multipart (file uploading) request body with the given form parameters,
-     * which could contain text fields and file fields.
-     *
-     * @param formParams Form parameters in the form of Map
-     * @return RequestBody
-     */
-    public RequestBody buildRequestBodyMultipart(Map<String, Object> formParams) {
-        MultipartBody.Builder mpBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
-        for (Entry<String, Object> param : formParams.entrySet()) {
-            if (param.getValue() instanceof File) {
-                File file = (File) param.getValue();
-                addPartToMultiPartBuilder(mpBuilder, param.getKey(), file);
-            } else if (param.getValue() instanceof List) {
-                List list = (List) param.getValue();
-                for (Object item: list) {
-                    if (item instanceof File) {
-                        addPartToMultiPartBuilder(mpBuilder, param.getKey(), (File) item);
-                    } else {
-                        addPartToMultiPartBuilder(mpBuilder, param.getKey(), param.getValue());
-                    }
-                }
-            } else {
-                addPartToMultiPartBuilder(mpBuilder, param.getKey(), param.getValue());
-            }
-        }
-        return mpBuilder.build();
-    }
-
-    /**
-     * Guess Content-Type header from the given file (defaults to "application/octet-stream").
-     *
-     * @param file The given file
-     * @return The guessed Content-Type
-     */
-    public String guessContentTypeFromFile(File file) {
-        String contentType = URLConnection.guessContentTypeFromName(file.getName());
-        if (contentType == null) {
-            return "application/octet-stream";
-        } else {
-            return contentType;
-        }
-    }
-
-    /**
-     * Add a Content-Disposition Header for the given key and file to the MultipartBody Builder.
-     *
-     * @param mpBuilder MultipartBody.Builder 
-     * @param key The key of the Header element
-     * @param file The file to add to the Header
-     */ 
-    protected void addPartToMultiPartBuilder(MultipartBody.Builder mpBuilder, String key, File file) {
-        Headers partHeaders = Headers.of("Content-Disposition", "form-data; name=\"" + key + "\"; filename=\"" + file.getName() + "\"");
-        MediaType mediaType = MediaType.parse(guessContentTypeFromFile(file));
-        mpBuilder.addPart(partHeaders, RequestBody.create(file, mediaType));
-    }
-
-    /**
-     * Add a Content-Disposition Header for the given key and complex object to the MultipartBody Builder.
-     *
-     * @param mpBuilder MultipartBody.Builder
-     * @param key The key of the Header element
-     * @param obj The complex object to add to the Header
-     */
-    protected void addPartToMultiPartBuilder(MultipartBody.Builder mpBuilder, String key, Object obj) {
-        RequestBody requestBody;
-        if (obj instanceof String) {
-            requestBody = RequestBody.create((String) obj, MediaType.parse("text/plain"));
-        } else {
-            String content;
-            if (obj != null) {
-                content = JSON.serialize(obj);
-            } else {
-                content = null;
-            }
-            requestBody = RequestBody.create(content, MediaType.parse("application/json"));
+    * Formats the specified collection path parameter to a string value.
+    *
+    * @param collectionFormat The collection format of the parameter.
+    * @param values The values of the parameter.
+    * @return String representation of the parameter
+    */
+    public String collectionPathParameterToString(CollectionFormat collectionFormat, Collection<?> values) {
+        // create the value based on the collection format
+        if (CollectionFormat.MULTI.equals(collectionFormat)) {
+            // not valid for path params
+            return parameterToString(values);
         }
 
-        Headers partHeaders = Headers.of("Content-Disposition", "form-data; name=\"" + key + "\"");
-        mpBuilder.addPart(partHeaders, requestBody);
-    }
-
-    /**
-     * Get network interceptor to add it to the httpClient to track download progress for
-     * async requests.
-     */
-    protected Interceptor getProgressInterceptor() {
-        return new Interceptor() {
-            @Override
-            public Response intercept(Interceptor.Chain chain) throws IOException {
-                final Request request = chain.request();
-                final Response originalResponse = chain.proceed(request);
-                if (request.tag() instanceof ApiCallback) {
-                    final ApiCallback callback = (ApiCallback) request.tag();
-                    return originalResponse.newBuilder()
-                        .body(new ProgressResponseBody(originalResponse.body(), callback))
-                        .build();
-                }
-                return originalResponse;
-            }
-        };
-    }
-
-    /**
-     * Apply SSL related settings to httpClient according to the current values of
-     * verifyingSsl and sslCaCert.
-     */
-    protected void applySslSettings() {
-        try {
-            TrustManager[] trustManagers;
-            HostnameVerifier hostnameVerifier;
-            if (!verifyingSsl) {
-                trustManagers = new TrustManager[]{
-                        new X509TrustManager() {
-                            @Override
-                            public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                            }
-
-                            @Override
-                            public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                            }
-
-                            @Override
-                            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                                return new java.security.cert.X509Certificate[]{};
-                            }
-                        }
-                };
-                hostnameVerifier = new HostnameVerifier() {
-                    @Override
-                    public boolean verify(String hostname, SSLSession session) {
-                        return true;
-                    }
-                };
-            } else {
-                TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-
-                if (sslCaCert == null) {
-                    trustManagerFactory.init((KeyStore) null);
-                } else {
-                    char[] password = null; // Any password will work.
-                    CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-                    Collection<? extends Certificate> certificates = certificateFactory.generateCertificates(sslCaCert);
-                    if (certificates.isEmpty()) {
-                        throw new IllegalArgumentException("expected non-empty set of trusted certificates");
-                    }
-                    KeyStore caKeyStore = newEmptyKeyStore(password);
-                    int index = 0;
-                    for (Certificate certificate : certificates) {
-                        String certificateAlias = "ca" + (index++);
-                        caKeyStore.setCertificateEntry(certificateAlias, certificate);
-                    }
-                    trustManagerFactory.init(caKeyStore);
-                }
-                trustManagers = trustManagerFactory.getTrustManagers();
-                hostnameVerifier = OkHostnameVerifier.INSTANCE;
-            }
-
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(keyManagers, trustManagers, new SecureRandom());
-            httpClient = httpClient.newBuilder()
-                            .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0])
-                            .hostnameVerifier(hostnameVerifier)
-                            .build();
-        } catch (GeneralSecurityException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected KeyStore newEmptyKeyStore(char[] password) throws GeneralSecurityException {
-        try {
-            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            keyStore.load(null, password);
-            return keyStore;
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    /**
-     * Convert the HTTP request body to a string.
-     *
-     * @param requestBody The HTTP request object
-     * @return The string representation of the HTTP request body
-     * @throws eu.openanalytics.containerproxy.backend.spcs.client.ApiException If fail to serialize the request body object into a string
-     */
-    protected String requestBodyToString(RequestBody requestBody) throws ApiException {
-        if (requestBody != null) {
-            try {
-                final Buffer buffer = new Buffer();
-                requestBody.writeTo(buffer);
-                return buffer.readUtf8();
-            } catch (final IOException e) {
-                throw new ApiException(e);
-            }
+         // collectionFormat is assumed to be "csv" by default
+        if(collectionFormat == null) {
+            collectionFormat = CollectionFormat.CSV;
         }
 
-        // empty http request body
-        return "";
+        return collectionFormat.collectionToString(values);
     }
 }
-

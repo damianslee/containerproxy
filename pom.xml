@@ -422,22 +422,11 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-csv</artifactId>
         </dependency>
-        <!-- Gson for Snowflake REST API client -->
+        <!-- Jackson nullable for Snowflake REST API client (WebClient) -->
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-        </dependency>
-        <!-- Gson Fire for Snowflake REST API client -->
-        <dependency>
-            <groupId>io.gsonfire</groupId>
-            <artifactId>gson-fire</artifactId>
-            <version>1.9.0</version>
-        </dependency>
-        <!-- Apache OLTU OAuth2 for Snowflake REST API client -->
-        <dependency>
-            <groupId>org.apache.oltu.oauth2</groupId>
-            <artifactId>org.apache.oltu.oauth2.client</artifactId>
-            <version>1.0.2</version>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>0.2.6</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

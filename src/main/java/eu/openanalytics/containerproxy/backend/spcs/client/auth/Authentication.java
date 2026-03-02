@@ -13,26 +13,17 @@
 
 package eu.openanalytics.containerproxy.backend.spcs.client.auth;
 
-import eu.openanalytics.containerproxy.backend.spcs.client.Pair;
-import eu.openanalytics.containerproxy.backend.spcs.client.ApiException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.util.MultiValueMap;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.List;
-
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:48:43.068946900+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:42:29.597406700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public interface Authentication {
     /**
-     * Apply authentication settings to header and query params.
+     * Apply authentication settings to header and / or query parameters.
      *
-     * @param queryParams List of query parameters
-     * @param headerParams Map of header parameters
-     * @param cookieParams Map of cookie parameters
-     * @param payload HTTP request body
-     * @param method HTTP method
-     * @param uri URI
-     * @throws ApiException if failed to update the parameters
+     * @param queryParams The query parameters for the request
+     * @param headerParams The header parameters for the request
+     * @param cookieParams The cookie parameters for the request
      */
-    void applyToParams(List<Pair> queryParams, Map<String, String> headerParams, Map<String, String> cookieParams, String payload, String method, URI uri) throws ApiException;
+    void applyToParams(MultiValueMap<String, String> queryParams, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams);
 }
-

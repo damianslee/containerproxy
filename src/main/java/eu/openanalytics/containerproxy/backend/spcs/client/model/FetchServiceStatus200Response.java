@@ -25,44 +25,44 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
- * FetchServiceLogs200Response
+ * FetchServiceStatus200Response
  */
 @JsonPropertyOrder({
-  FetchServiceLogs200Response.JSON_PROPERTY_SYSTEM$GET_SERVICE_LOGS
+  FetchServiceStatus200Response.JSON_PROPERTY_SYSTEM$GET_SERVICE_STATUS
 })
-@JsonTypeName("fetchServiceLogs_200_response")
+@JsonTypeName("fetchServiceStatus_200_response")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:25.529847700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
-public class FetchServiceLogs200Response {
-  public static final String JSON_PROPERTY_SYSTEM$GET_SERVICE_LOGS = "system$get_service_logs";
+public class FetchServiceStatus200Response {
+  public static final String JSON_PROPERTY_SYSTEM$GET_SERVICE_STATUS = "system$get_service_status";
   @javax.annotation.Nullable
-  private String system$getServiceLogs;
+  private String system$getServiceStatus;
 
-  public FetchServiceLogs200Response() {
+  public FetchServiceStatus200Response() {
   }
 
-  public FetchServiceLogs200Response system$getServiceLogs(@javax.annotation.Nullable String system$getServiceLogs) {
+  public FetchServiceStatus200Response system$getServiceStatus(@javax.annotation.Nullable String system$getServiceStatus) {
     
-    this.system$getServiceLogs = system$getServiceLogs;
+    this.system$getServiceStatus = system$getServiceStatus;
     return this;
   }
 
   /**
-   * Get system$getServiceLogs
-   * @return system$getServiceLogs
+   * Get system$getServiceStatus
+   * @return system$getServiceStatus
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_SYSTEM$GET_SERVICE_LOGS, required = false)
+  @JsonProperty(value = JSON_PROPERTY_SYSTEM$GET_SERVICE_STATUS, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getSystem$getServiceLogs() {
-    return system$getServiceLogs;
+  public String getSystem$getServiceStatus() {
+    return system$getServiceStatus;
   }
 
 
-  @JsonProperty(value = JSON_PROPERTY_SYSTEM$GET_SERVICE_LOGS, required = false)
+  @JsonProperty(value = JSON_PROPERTY_SYSTEM$GET_SERVICE_STATUS, required = false)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setSystem$getServiceLogs(@javax.annotation.Nullable String system$getServiceLogs) {
-    this.system$getServiceLogs = system$getServiceLogs;
+  public void setSystem$getServiceStatus(@javax.annotation.Nullable String system$getServiceStatus) {
+    this.system$getServiceStatus = system$getServiceStatus;
   }
 
 
@@ -74,20 +74,20 @@ public class FetchServiceLogs200Response {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    FetchServiceLogs200Response fetchServiceLogs200Response = (FetchServiceLogs200Response) o;
-    return Objects.equals(this.system$getServiceLogs, fetchServiceLogs200Response.system$getServiceLogs);
+    FetchServiceStatus200Response fetchServiceStatus200Response = (FetchServiceStatus200Response) o;
+    return Objects.equals(this.system$getServiceStatus, fetchServiceStatus200Response.system$getServiceStatus);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(system$getServiceLogs);
+    return Objects.hash(system$getServiceStatus);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class FetchServiceLogs200Response {\n");
-    sb.append("    system$getServiceLogs: ").append(toIndentedString(system$getServiceLogs)).append("\n");
+    sb.append("class FetchServiceStatus200Response {\n");
+    sb.append("    system$getServiceStatus: ").append(toIndentedString(system$getServiceStatus)).append("\n");
     sb.append("}");
     return sb.toString();
   }

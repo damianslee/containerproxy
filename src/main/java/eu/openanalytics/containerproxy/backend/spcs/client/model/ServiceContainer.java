@@ -14,123 +14,105 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * ServiceContainer
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:47:48.337179400+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  ServiceContainer.JSON_PROPERTY_DATABASE_NAME,
+  ServiceContainer.JSON_PROPERTY_SCHEMA_NAME,
+  ServiceContainer.JSON_PROPERTY_SERVICE_NAME,
+  ServiceContainer.JSON_PROPERTY_SERVICE_STATUS,
+  ServiceContainer.JSON_PROPERTY_INSTANCE_ID,
+  ServiceContainer.JSON_PROPERTY_INSTANCE_STATUS,
+  ServiceContainer.JSON_PROPERTY_CONTAINER_NAME,
+  ServiceContainer.JSON_PROPERTY_STATUS,
+  ServiceContainer.JSON_PROPERTY_MESSAGE,
+  ServiceContainer.JSON_PROPERTY_IMAGE_NAME,
+  ServiceContainer.JSON_PROPERTY_IMAGE_DIGEST,
+  ServiceContainer.JSON_PROPERTY_RESTART_COUNT,
+  ServiceContainer.JSON_PROPERTY_START_TIME
+})
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:25.529847700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class ServiceContainer {
-  public static final String SERIALIZED_NAME_DATABASE_NAME = "database_name";
-  @SerializedName(SERIALIZED_NAME_DATABASE_NAME)
+  public static final String JSON_PROPERTY_DATABASE_NAME = "database_name";
   @javax.annotation.Nullable
   private String databaseName;
 
-  public static final String SERIALIZED_NAME_SCHEMA_NAME = "schema_name";
-  @SerializedName(SERIALIZED_NAME_SCHEMA_NAME)
+  public static final String JSON_PROPERTY_SCHEMA_NAME = "schema_name";
   @javax.annotation.Nullable
   private String schemaName;
 
-  public static final String SERIALIZED_NAME_SERVICE_NAME = "service_name";
-  @SerializedName(SERIALIZED_NAME_SERVICE_NAME)
+  public static final String JSON_PROPERTY_SERVICE_NAME = "service_name";
   @javax.annotation.Nullable
   private String serviceName;
 
-  public static final String SERIALIZED_NAME_SERVICE_STATUS = "service_status";
-  @SerializedName(SERIALIZED_NAME_SERVICE_STATUS)
+  public static final String JSON_PROPERTY_SERVICE_STATUS = "service_status";
   @javax.annotation.Nullable
   private String serviceStatus;
 
-  public static final String SERIALIZED_NAME_INSTANCE_ID = "instance_id";
-  @SerializedName(SERIALIZED_NAME_INSTANCE_ID)
+  public static final String JSON_PROPERTY_INSTANCE_ID = "instance_id";
   @javax.annotation.Nullable
   private String instanceId;
 
-  public static final String SERIALIZED_NAME_INSTANCE_STATUS = "instance_status";
-  @SerializedName(SERIALIZED_NAME_INSTANCE_STATUS)
+  public static final String JSON_PROPERTY_INSTANCE_STATUS = "instance_status";
   @javax.annotation.Nullable
   private String instanceStatus;
 
-  public static final String SERIALIZED_NAME_CONTAINER_NAME = "container_name";
-  @SerializedName(SERIALIZED_NAME_CONTAINER_NAME)
+  public static final String JSON_PROPERTY_CONTAINER_NAME = "container_name";
   @javax.annotation.Nullable
   private String containerName;
 
-  public static final String SERIALIZED_NAME_STATUS = "status";
-  @SerializedName(SERIALIZED_NAME_STATUS)
+  public static final String JSON_PROPERTY_STATUS = "status";
   @javax.annotation.Nullable
   private String status;
 
-  public static final String SERIALIZED_NAME_MESSAGE = "message";
-  @SerializedName(SERIALIZED_NAME_MESSAGE)
+  public static final String JSON_PROPERTY_MESSAGE = "message";
   @javax.annotation.Nullable
   private String message;
 
-  public static final String SERIALIZED_NAME_IMAGE_NAME = "image_name";
-  @SerializedName(SERIALIZED_NAME_IMAGE_NAME)
+  public static final String JSON_PROPERTY_IMAGE_NAME = "image_name";
   @javax.annotation.Nullable
   private String imageName;
 
-  public static final String SERIALIZED_NAME_IMAGE_DIGEST = "image_digest";
-  @SerializedName(SERIALIZED_NAME_IMAGE_DIGEST)
+  public static final String JSON_PROPERTY_IMAGE_DIGEST = "image_digest";
   @javax.annotation.Nullable
   private String imageDigest;
 
-  public static final String SERIALIZED_NAME_RESTART_COUNT = "restart_count";
-  @SerializedName(SERIALIZED_NAME_RESTART_COUNT)
+  public static final String JSON_PROPERTY_RESTART_COUNT = "restart_count";
   @javax.annotation.Nullable
   private Integer restartCount;
 
-  public static final String SERIALIZED_NAME_START_TIME = "start_time";
-  @SerializedName(SERIALIZED_NAME_START_TIME)
+  public static final String JSON_PROPERTY_START_TIME = "start_time";
   @javax.annotation.Nullable
   private String startTime;
 
   public ServiceContainer() {
   }
-
+  /**
+   * Constructor with only readonly parameters
+   */
+  @JsonCreator
   public ServiceContainer(
-     String serviceStatus, 
-     String instanceId, 
-     String instanceStatus, 
-     String containerName, 
-     String status, 
-     String message, 
-     String imageName, 
-     String imageDigest, 
-     Integer restartCount, 
-     String startTime
+    @JsonProperty(JSON_PROPERTY_SERVICE_STATUS) String serviceStatus, 
+    @JsonProperty(JSON_PROPERTY_INSTANCE_ID) String instanceId, 
+    @JsonProperty(JSON_PROPERTY_INSTANCE_STATUS) String instanceStatus, 
+    @JsonProperty(JSON_PROPERTY_CONTAINER_NAME) String containerName, 
+    @JsonProperty(JSON_PROPERTY_STATUS) String status, 
+    @JsonProperty(JSON_PROPERTY_MESSAGE) String message, 
+    @JsonProperty(JSON_PROPERTY_IMAGE_NAME) String imageName, 
+    @JsonProperty(JSON_PROPERTY_IMAGE_DIGEST) String imageDigest, 
+    @JsonProperty(JSON_PROPERTY_RESTART_COUNT) Integer restartCount, 
+    @JsonProperty(JSON_PROPERTY_START_TIME) String startTime
   ) {
     this();
     this.serviceStatus = serviceStatus;
@@ -146,6 +128,7 @@ public class ServiceContainer {
   }
 
   public ServiceContainer databaseName(@javax.annotation.Nullable String databaseName) {
+    
     this.databaseName = databaseName;
     return this;
   }
@@ -155,16 +138,22 @@ public class ServiceContainer {
    * @return databaseName
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_DATABASE_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getDatabaseName() {
     return databaseName;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_DATABASE_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setDatabaseName(@javax.annotation.Nullable String databaseName) {
     this.databaseName = databaseName;
   }
 
-
   public ServiceContainer schemaName(@javax.annotation.Nullable String schemaName) {
+    
     this.schemaName = schemaName;
     return this;
   }
@@ -174,16 +163,22 @@ public class ServiceContainer {
    * @return schemaName
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SCHEMA_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getSchemaName() {
     return schemaName;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_SCHEMA_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSchemaName(@javax.annotation.Nullable String schemaName) {
     this.schemaName = schemaName;
   }
 
-
   public ServiceContainer serviceName(@javax.annotation.Nullable String serviceName) {
+    
     this.serviceName = serviceName;
     return this;
   }
@@ -193,20 +188,28 @@ public class ServiceContainer {
    * @return serviceName
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SERVICE_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getServiceName() {
     return serviceName;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_SERVICE_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setServiceName(@javax.annotation.Nullable String serviceName) {
     this.serviceName = serviceName;
   }
-
 
   /**
    * The current status of the service.
    * @return serviceStatus
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SERVICE_STATUS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getServiceStatus() {
     return serviceStatus;
   }
@@ -218,6 +221,9 @@ public class ServiceContainer {
    * @return instanceId
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_INSTANCE_ID, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getInstanceId() {
     return instanceId;
   }
@@ -229,6 +235,9 @@ public class ServiceContainer {
    * @return instanceStatus
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_INSTANCE_STATUS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getInstanceStatus() {
     return instanceStatus;
   }
@@ -240,6 +249,9 @@ public class ServiceContainer {
    * @return containerName
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_CONTAINER_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getContainerName() {
     return containerName;
   }
@@ -251,6 +263,9 @@ public class ServiceContainer {
    * @return status
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_STATUS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getStatus() {
     return status;
   }
@@ -262,6 +277,9 @@ public class ServiceContainer {
    * @return message
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_MESSAGE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getMessage() {
     return message;
   }
@@ -273,6 +291,9 @@ public class ServiceContainer {
    * @return imageName
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_IMAGE_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getImageName() {
     return imageName;
   }
@@ -284,6 +305,9 @@ public class ServiceContainer {
    * @return imageDigest
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_IMAGE_DIGEST, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getImageDigest() {
     return imageDigest;
   }
@@ -295,6 +319,9 @@ public class ServiceContainer {
    * @return restartCount
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_RESTART_COUNT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Integer getRestartCount() {
     return restartCount;
   }
@@ -306,6 +333,9 @@ public class ServiceContainer {
    * @return startTime
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_START_TIME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getStartTime() {
     return startTime;
   }
@@ -374,125 +404,5 @@ public class ServiceContainer {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("database_name", "schema_name", "service_name", "service_status", "instance_id", "instance_status", "container_name", "status", "message", "image_name", "image_digest", "restart_count", "start_time"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(0);
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to ServiceContainer
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!ServiceContainer.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in ServiceContainer is not found in the empty JSON string", ServiceContainer.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!ServiceContainer.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ServiceContainer` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if ((jsonObj.get("database_name") != null && !jsonObj.get("database_name").isJsonNull()) && !jsonObj.get("database_name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `database_name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("database_name").toString()));
-      }
-      if ((jsonObj.get("schema_name") != null && !jsonObj.get("schema_name").isJsonNull()) && !jsonObj.get("schema_name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `schema_name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("schema_name").toString()));
-      }
-      if ((jsonObj.get("service_name") != null && !jsonObj.get("service_name").isJsonNull()) && !jsonObj.get("service_name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `service_name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("service_name").toString()));
-      }
-      if ((jsonObj.get("service_status") != null && !jsonObj.get("service_status").isJsonNull()) && !jsonObj.get("service_status").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `service_status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("service_status").toString()));
-      }
-      if ((jsonObj.get("instance_id") != null && !jsonObj.get("instance_id").isJsonNull()) && !jsonObj.get("instance_id").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `instance_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("instance_id").toString()));
-      }
-      if ((jsonObj.get("instance_status") != null && !jsonObj.get("instance_status").isJsonNull()) && !jsonObj.get("instance_status").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `instance_status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("instance_status").toString()));
-      }
-      if ((jsonObj.get("container_name") != null && !jsonObj.get("container_name").isJsonNull()) && !jsonObj.get("container_name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `container_name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("container_name").toString()));
-      }
-      if ((jsonObj.get("status") != null && !jsonObj.get("status").isJsonNull()) && !jsonObj.get("status").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("status").toString()));
-      }
-      if ((jsonObj.get("message") != null && !jsonObj.get("message").isJsonNull()) && !jsonObj.get("message").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("message").toString()));
-      }
-      if ((jsonObj.get("image_name") != null && !jsonObj.get("image_name").isJsonNull()) && !jsonObj.get("image_name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `image_name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("image_name").toString()));
-      }
-      if ((jsonObj.get("image_digest") != null && !jsonObj.get("image_digest").isJsonNull()) && !jsonObj.get("image_digest").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `image_digest` to be a primitive type in the JSON string but got `%s`", jsonObj.get("image_digest").toString()));
-      }
-      if ((jsonObj.get("start_time") != null && !jsonObj.get("start_time").isJsonNull()) && !jsonObj.get("start_time").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `start_time` to be a primitive type in the JSON string but got `%s`", jsonObj.get("start_time").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ServiceContainer.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ServiceContainer' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ServiceContainer> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ServiceContainer.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ServiceContainer>() {
-           @Override
-           public void write(JsonWriter out, ServiceContainer value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ServiceContainer read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of ServiceContainer given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of ServiceContainer
-   * @throws IOException if the JSON string is invalid with respect to ServiceContainer
-   */
-  public static ServiceContainer fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ServiceContainer.class);
-  }
-
-  /**
-   * Convert an instance of ServiceContainer to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
-
 

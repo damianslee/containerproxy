@@ -21,7 +21,7 @@
 package eu.openanalytics.containerproxy.backend.spcs;
 
 import eu.openanalytics.containerproxy.backend.spcs.client.ApiClient;
-import eu.openanalytics.containerproxy.backend.spcs.client.ApiException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import eu.openanalytics.containerproxy.backend.spcs.client.auth.HttpBearerAuth;
 import eu.openanalytics.containerproxy.backend.spcs.client.api.ServiceApi;
 import eu.openanalytics.containerproxy.backend.spcs.client.api.StatementsApi;
@@ -97,6 +97,7 @@ public class SpcsBackend extends AbstractContainerBackend {
     private static final String PROPERTY_DATABASE = "database";
     private static final String PROPERTY_SCHEMA = "schema";
     private static final String PROPERTY_COMPUTE_POOL = "compute-pool";
+    private static final String PROPERTY_COMPUTE_WAREHOUSE = "compute-warehouse";
     private static final String PROPERTY_SERVICE_WAIT_TIME = "service-wait-time";
     private static final String PROPERTY_USE_ROLE = "use-role";
 
@@ -363,10 +364,10 @@ public class SpcsBackend extends AbstractContainerBackend {
             // Use KeyPair authentication scheme (HttpBearerAuth) for all token types - works for JWT, OAuth, and PAT tokens
             HttpBearerAuth bearerAuth = (HttpBearerAuth) snowflakeAPIClient.getAuthentication("KeyPair");
             
-            // Set bearer token using supplier (allows automatic refresh)
-            // For keypair: use supplier to generate JWT tokens on-demand (auto-refreshes on expiry)
-            // For SPCS session token: use supplier to read token fresh on each request (allows SPCS auto-refresh)
-            // For PAT: use supplier for consistency and to support future token rotation
+            // Set bearer token using supplier so it is resolved on each request
+            // For SPCS_SESSION_TOKEN: reads current value from file (allows SPCS to refresh token)
+            // For KEYPAIR: generates JWT on demand (auto-refresh on expiry)
+            // For PAT: supplier returns same token
             bearerAuth.setBearerToken(jwtTokenSupplier);
             
             // Set X-Snowflake-Authorization-Token-Type header
@@ -466,7 +467,7 @@ public class SpcsBackend extends AbstractContainerBackend {
             rContainerBuilder.addRuntimeValue(new RuntimeValue(BackendContainerNameKey.inst, new BackendContainerName(fullServiceName)), false);
             service.setComment(createCommentMetadata(proxy, rContainerBuilder.build()));
 
-            snowflakeServiceAPI.createService(database, schema, service, "ifNotExists");
+            snowflakeServiceAPI.createService(database, schema, service, "ifNotExists").block();
             slog.info(proxy, String.format("Created Snowflake service: %s", fullServiceName));
 
             applicationEventPublisher.publishEvent(new NewProxyEvent(proxy.toBuilder().updateContainer(rContainerBuilder.build()).build(), authentication));
@@ -477,7 +478,7 @@ public class SpcsBackend extends AbstractContainerBackend {
 
             boolean serviceReady = Retrying.retry((currentAttempt, maxAttempts) -> {
                 try {
-                    List<ServiceContainer> containers = snowflakeServiceAPI.listServiceContainers(database, schema, serviceName);
+                    List<ServiceContainer> containers = snowflakeServiceAPI.listServiceContainers(database, schema, serviceName).collectList().block();
                     boolean containerRunning = false;
                     if (containers != null && !containers.isEmpty()) {
                         for (ServiceContainer sc : containers) {
@@ -500,7 +501,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                     if (!containerRunning) return Retrying.FAILURE;
 
                     if (needsEndpoints) {
-                        List<ServiceEndpoint> endpoints = snowflakeServiceAPI.showServiceEndpoints(database, schema, serviceName);
+                        List<ServiceEndpoint> endpoints = snowflakeServiceAPI.showServiceEndpoints(database, schema, serviceName).collectList().block();
                         if (endpoints == null || endpoints.isEmpty()) return Retrying.FAILURE;
                         for (eu.openanalytics.containerproxy.model.spec.PortMapping pm : spec.getPortMapping()) {
                             boolean found = false;
@@ -519,7 +520,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                         }
                     }
                     return Retrying.SUCCESS;
-                } catch (ApiException e) {
+                } catch (WebClientResponseException e) {
                     slog.warn(proxy, String.format("Error checking service status: %s", e.getMessage()));
                     return Retrying.FAILURE;
                 }
@@ -1266,9 +1267,9 @@ public class SpcsBackend extends AbstractContainerBackend {
                     String serviceSchema = parts[1];
                     String serviceName = parts[2];
                     try {
-                        snowflakeServiceAPI.suspendService(serviceDb, serviceSchema, serviceName, false);
+                        snowflakeServiceAPI.suspendService(serviceDb, serviceSchema, serviceName, false).block();
                         slog.info(proxy, String.format("Suspended Snowflake service: %s", fullServiceName));
-                    } catch (ApiException e) {
+                    } catch (WebClientResponseException e) {
                         slog.warn(proxy, String.format("Error suspending Snowflake service %s: %s", fullServiceName, e.getMessage()));
                         throw new ContainerProxyException("Failed to suspend Snowflake service: " + e.getMessage(), e);
                     }
@@ -1306,13 +1307,13 @@ public class SpcsBackend extends AbstractContainerBackend {
         
         try {
             // Resume the service
-            snowflakeServiceAPI.resumeService(serviceDb, serviceSchema, serviceName, false);
+            snowflakeServiceAPI.resumeService(serviceDb, serviceSchema, serviceName, false).block();
             slog.info(proxy, String.format("Resuming Snowflake service: %s", fullServiceName));
             
             // Wait for service to be ready (similar to start container logic)
             boolean serviceReady = Retrying.retry((currentAttempt, maxAttempts) -> {
                 try {
-                    List<ServiceContainer> containers = snowflakeServiceAPI.listServiceContainers(serviceDb, serviceSchema, serviceName);
+                    List<ServiceContainer> containers = snowflakeServiceAPI.listServiceContainers(serviceDb, serviceSchema, serviceName).collectList().block();
                     if (containers == null || containers.isEmpty()) {
                         return Retrying.FAILURE;
                     }
@@ -1342,7 +1343,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                     }
                     
                     return Retrying.SUCCESS;
-                } catch (ApiException e) {
+                } catch (WebClientResponseException e) {
                     slog.warn(proxy, String.format("Error checking service containers during resume: %s", e.getMessage()));
                     return Retrying.FAILURE;
                 }
@@ -1369,7 +1370,7 @@ public class SpcsBackend extends AbstractContainerBackend {
             slog.info(proxy, String.format("Resumed Snowflake service: %s", fullServiceName));
             return proxy;
             
-        } catch (ApiException e) {
+        } catch (WebClientResponseException e) {
             slog.warn(proxy, String.format("Error resuming Snowflake service %s: %s", fullServiceName, e.getMessage()));
             throw new ProxyFailedToStartException("Failed to resume Snowflake service: " + e.getMessage(), e, proxy);
         }
@@ -1398,7 +1399,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                         boolean forceDelete = getForceDeleteForService(serviceName);
                         deleteServiceWithForce(serviceDb, serviceSchema, serviceName, forceDelete);
                         slog.info(proxy, String.format("Deleted Snowflake service: %s (force=%s)", fullServiceName, forceDelete));
-                    } catch (ApiException e) {
+                    } catch (WebClientResponseException e) {
                         slog.warn(proxy, String.format("Error deleting Snowflake service %s: %s", fullServiceName, e.getMessage()));
                     }
                 }
@@ -1413,7 +1414,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                     String[] parts = fullServiceName.split("\\.");
                     if (parts.length == 3) {
                         try {
-                            List<ServiceContainer> containers = snowflakeServiceAPI.listServiceContainers(parts[0], parts[1], parts[2]);
+                            List<ServiceContainer> containers = snowflakeServiceAPI.listServiceContainers(parts[0], parts[1], parts[2]).collectList().block();
                             // If we can list containers, service is not fully stopped
                             if (containers != null && !containers.isEmpty()) {
                             // Check if containers are stopped/suspended
@@ -1434,9 +1435,9 @@ public class SpcsBackend extends AbstractContainerBackend {
                                     return Retrying.FAILURE;
                                 }
                             }
-                        } catch (ApiException e) {
+                        } catch (WebClientResponseException e) {
                             // Service might be deleted already
-                            if (e.getCode() == 404) {
+                            if (e.getStatusCode().value() == 404) {
                                 return Retrying.SUCCESS;
                             }
                         }
@@ -1473,7 +1474,7 @@ public class SpcsBackend extends AbstractContainerBackend {
         ArrayList<ExistingContainerInfo> containers = new ArrayList<>();
         
         try {
-            List<Service> services = snowflakeServiceAPI.listServices(database, schema, "SP_SERVICE__%", null, null, null);
+            List<Service> services = snowflakeServiceAPI.listServices(database, schema, "SP_SERVICE__%", null, null, null).collectList().block();
             java.util.Set<Service> allServices = new java.util.HashSet<>();
             if (services != null) {
                 allServices.addAll(services);
@@ -1523,12 +1524,12 @@ public class SpcsBackend extends AbstractContainerBackend {
                 
                 // Get spec text for container extraction
                 try {
-                    Service fullService = snowflakeServiceAPI.fetchService(database, schema, serviceName);
+                    Service fullService = snowflakeServiceAPI.fetchService(database, schema, serviceName).block();
                     ServiceSpec serviceSpec = fullService.getSpec();
                     if (serviceSpec instanceof ServiceSpecInlineText) {
                         specText = ((ServiceSpecInlineText) serviceSpec).getSpecText();
                     }
-                } catch (ApiException e) {
+                } catch (WebClientResponseException e) {
                     log.warn("Error fetching service spec for recovery: {}", e.getMessage());
                 }
                 
@@ -1542,7 +1543,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                 Map<String, Object> allContainersMetadata = new HashMap<>(); // All containers from all proxies
                 Map<String, String> allProxyRuntimeValues = new HashMap<>(); // Proxy runtime values keyed by proxyId
                 try {
-                    Service fullService = snowflakeServiceAPI.fetchService(database, schema, serviceName);
+                    Service fullService = snowflakeServiceAPI.fetchService(database, schema, serviceName).block();
                     String comment = fullService.getComment();
                     if (comment != null && !comment.isEmpty()) {
                         Map<String, Object> commentMetadata = jsonMapper.readValue(comment, new TypeReference<Map<String, Object>>() {});
@@ -1622,7 +1623,7 @@ public class SpcsBackend extends AbstractContainerBackend {
             }
             
             log.info("Completed scanning SPCS services: {} recoverable service(s) found", containers.size());
-        } catch (ApiException e) {
+        } catch (WebClientResponseException e) {
             log.error("Error listing services for scan: {}", e.getMessage(), e);
         }
         
@@ -1638,7 +1639,7 @@ public class SpcsBackend extends AbstractContainerBackend {
             boolean forceDelete = getForceDeleteForService(serviceName);
             deleteServiceWithForce(database, schema, serviceName, forceDelete);
             log.info("Deleted Snowflake service: {}.{}.{} (force={})", database, schema, serviceName, forceDelete);
-        } catch (ApiException e) {
+        } catch (WebClientResponseException e) {
             log.warn("Error deleting Snowflake service {}.{}.{}: {}", database, schema, serviceName, e.getMessage());
         }
     }
@@ -1654,7 +1655,7 @@ public class SpcsBackend extends AbstractContainerBackend {
     private boolean fetchServiceImageAndMetadata(String serviceName, Map<String, String> metadata) {
         try {
             // Get the Service object - polymorphic deserialization is now handled correctly by CustomTypeAdapterFactory
-            Service fullService = snowflakeServiceAPI.fetchService(database, schema, serviceName);
+            Service fullService = snowflakeServiceAPI.fetchService(database, schema, serviceName).block();
             ServiceSpec serviceSpec = fullService.getSpec();
             
             // Extract spec_text (YAML string) from the properly deserialized ServiceSpecInlineText
@@ -1706,7 +1707,7 @@ public class SpcsBackend extends AbstractContainerBackend {
             }
                        
             return true;
-        } catch (ApiException e) {
+        } catch (WebClientResponseException e) {
             log.warn("Error fetching service spec for {}: {}", serviceName, e.getMessage());
             return false;
         }
@@ -2039,7 +2040,7 @@ public class SpcsBackend extends AbstractContainerBackend {
             }
             String serviceName = parts[2];
             try {
-                Service service = snowflakeServiceAPI.fetchService(database, schema, serviceName);
+                Service service = snowflakeServiceAPI.fetchService(database, schema, serviceName).block();
                 String status = service != null ? service.getStatus() : null;
                 if (status == null) {
                     slog.warn(proxy, "SPCS container failed: service status unknown");
@@ -2050,7 +2051,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                     slog.warn(proxy, String.format("SPCS container not healthy: service status %s", status));
                     return false;
                 }
-            } catch (ApiException e) {
+            } catch (WebClientResponseException e) {
                 slog.warn(proxy, String.format("SPCS container failed: error fetching service status: %s", e.getMessage()));
                 return false;
             }
@@ -2089,7 +2090,7 @@ public class SpcsBackend extends AbstractContainerBackend {
 
         try {
             // Fetch endpoints (same as calculateTarget does)
-            List<ServiceEndpoint> endpoints = snowflakeServiceAPI.showServiceEndpoints(database, schema, serviceName);
+            List<ServiceEndpoint> endpoints = snowflakeServiceAPI.showServiceEndpoints(database, schema, serviceName).collectList().block();
             if (endpoints != null && !endpoints.isEmpty()) {
                 // Find the first public HTTP endpoint (same logic as calculateTarget)
                 for (ServiceEndpoint endpoint : endpoints) {
@@ -2114,7 +2115,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                     }
                 }
             }
-        } catch (ApiException e) {
+        } catch (WebClientResponseException e) {
             log.debug("Could not fetch endpoints to get endpoint URL for keypair auth: {}", e.getMessage());
         }
         
@@ -2191,7 +2192,7 @@ public class SpcsBackend extends AbstractContainerBackend {
 
         // Fetch service to get DNS name or ingress URL
         try {
-            Service service = snowflakeServiceAPI.fetchService(parts[0], parts[1], parts[2]);
+            Service service = snowflakeServiceAPI.fetchService(parts[0], parts[1], parts[2]).block();
             
             if (isRunningInsideSpcs()) {
                 // When running inside SPCS: use internal DNS name for communication
@@ -2213,7 +2214,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                 // When running external to SPCS: use ingress URL (HTTPS) for communication
                 // Note: Public endpoints have protocol HTTP, but ingress URLs use HTTPS scheme
                 // Need to get the ingress URL from public service endpoints that match the port
-                List<ServiceEndpoint> endpoints = snowflakeServiceAPI.showServiceEndpoints(parts[0], parts[1], parts[2]);
+                List<ServiceEndpoint> endpoints = snowflakeServiceAPI.showServiceEndpoints(parts[0], parts[1], parts[2]).collectList().block();
                 int targetPort = portMapping.getPort();
                 
                 // Find public endpoint matching the port (when running external, we need public access)
@@ -2270,7 +2271,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                     throw new ContainerFailedToStartException("Invalid ingress URL format for port " + targetPort + ": " + ingressUrl, e, container);
                 }
             }
-        } catch (ApiException e) {
+        } catch (WebClientResponseException e) {
             throw new ContainerFailedToStartException("Failed to fetch service or endpoints: " + e.getMessage(), e, container);
         }
     }
@@ -2367,9 +2368,9 @@ public class SpcsBackend extends AbstractContainerBackend {
      * @param schema Schema name
      * @param serviceName Service name
      * @param force If true, uses SQL API to execute DROP SERVICE ... FORCE. If false, uses REST API.
-     * @throws ApiException If the deletion fails
+     * @throws WebClientResponseException If the deletion fails
      */
-    private void deleteServiceWithForce(String database, String schema, String serviceName, boolean force) throws ApiException {
+    private void deleteServiceWithForce(String database, String schema, String serviceName, boolean force) throws WebClientResponseException {
         if (force) {
             // Use SQL API to execute DROP SERVICE ... FORCE
             // The REST API doesn't support force deletion
@@ -2380,26 +2381,37 @@ public class SpcsBackend extends AbstractContainerBackend {
             
             SubmitStatementRequest request = new SubmitStatementRequest();
             request.setStatement(sql);
-            // Don't set warehouse - service deletion doesn't require a warehouse
+            // SQL API requires session context: set database and schema so DROP SERVICE runs in the correct namespace
+            request.setDatabase(database);
+            request.setSchema(schema);
+            // Warehouse is required by the SQL API
+            String computeWarehouse = getProperty(PROPERTY_COMPUTE_WAREHOUSE);
+            if (computeWarehouse != null && !computeWarehouse.isBlank()) {
+                request.setWarehouse(computeWarehouse.trim().toUpperCase());
+            }
             
+            // Service management (including force delete) uses the shared client with service token only (disk, keypair, or PAT).
             try {
+                // Pass null for token type so only the client's default header is sent (avoid duplicate X-Snowflake-Authorization-Token-Type).
                 snowflakeStatementsAPI.submitStatement(
                     "ContainerProxy/1.0", // userAgent
                     request,
                     null, // requestId
                     false, // async
                     false, // nullable
-                    null, // accept
-                    snowflakeTokenType // xSnowflakeAuthorizationTokenType - use the same token type as configured for REST API
-                );
+                    "application/json", // accept - required by Snowflake SQL API
+                    null   // xSnowflakeAuthorizationTokenType - use client default to avoid duplicate header (391912)
+                ).block();
                 log.debug("Successfully force deleted service {}.{}.{} using SQL API", database, schema, serviceName);
-            } catch (ApiException e) {
-                log.warn("Failed to force delete service {}.{}.{} using SQL API: {}", database, schema, serviceName, e.getMessage());
+            } catch (WebClientResponseException e) {
+                String responseBody = e.getResponseBodyAsString();
+                log.warn("Failed to force delete service {}.{}.{} using SQL API: {}; response body: {}", 
+                    database, schema, serviceName, e.getMessage(), responseBody != null && !responseBody.isEmpty() ? responseBody : "(empty)");
                 throw e;
             }
         } else {
             // Use REST API for normal deletion
-            snowflakeServiceAPI.deleteService(database, schema, serviceName, false);
+            snowflakeServiceAPI.deleteService(database, schema, serviceName, false).block();
         }
     }
     
@@ -2430,7 +2442,7 @@ public class SpcsBackend extends AbstractContainerBackend {
     private String fetchServiceLogsForError(String database, String schema, String serviceName) {
         try {
             // First, try to get container info to get instance and container names
-            List<ServiceContainer> containers = snowflakeServiceAPI.listServiceContainers(database, schema, serviceName);
+            List<ServiceContainer> containers = snowflakeServiceAPI.listServiceContainers(database, schema, serviceName).collectList().block();
             if (containers == null || containers.isEmpty()) {
                 return null;
             }
@@ -2455,7 +2467,7 @@ public class SpcsBackend extends AbstractContainerBackend {
             
             // Use the generated API method to fetch logs
             eu.openanalytics.containerproxy.backend.spcs.client.model.FetchServiceLogs200Response response = 
-                snowflakeServiceAPI.fetchServiceLogs(database, schema, serviceName, instanceId, containerName, 50);
+                snowflakeServiceAPI.fetchServiceLogs(database, schema, serviceName, instanceId, containerName, 50).block();
             
             if (response == null || response.getSystem$getServiceLogs() == null) {
                 return null;
@@ -2478,7 +2490,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                 return summary.toString().trim();
             }
             return logContent.trim();
-        } catch (ApiException e) {
+        } catch (WebClientResponseException e) {
             log.debug("Could not fetch service logs via API: {}", e.getMessage());
             return null;
         } catch (Exception e) {

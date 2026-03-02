@@ -14,56 +14,35 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * Schema for a request in progress response returned by the server.
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:48:43.068946900+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  SuccessAcceptedResponse.JSON_PROPERTY_CODE,
+  SuccessAcceptedResponse.JSON_PROPERTY_MESSAGE,
+  SuccessAcceptedResponse.JSON_PROPERTY_RESULT_HANDLER
+})
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:42:29.597406700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class SuccessAcceptedResponse {
-  public static final String SERIALIZED_NAME_CODE = "code";
-  @SerializedName(SERIALIZED_NAME_CODE)
+  public static final String JSON_PROPERTY_CODE = "code";
   @javax.annotation.Nullable
   private String code;
 
-  public static final String SERIALIZED_NAME_MESSAGE = "message";
-  @SerializedName(SERIALIZED_NAME_MESSAGE)
+  public static final String JSON_PROPERTY_MESSAGE = "message";
   @javax.annotation.Nullable
   private String message;
 
-  public static final String SERIALIZED_NAME_RESULT_HANDLER = "resultHandler";
-  @SerializedName(SERIALIZED_NAME_RESULT_HANDLER)
+  public static final String JSON_PROPERTY_RESULT_HANDLER = "resultHandler";
   @javax.annotation.Nullable
   private String resultHandler;
 
@@ -71,6 +50,7 @@ public class SuccessAcceptedResponse {
   }
 
   public SuccessAcceptedResponse code(@javax.annotation.Nullable String code) {
+    
     this.code = code;
     return this;
   }
@@ -80,16 +60,22 @@ public class SuccessAcceptedResponse {
    * @return code
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_CODE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getCode() {
     return code;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_CODE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setCode(@javax.annotation.Nullable String code) {
     this.code = code;
   }
 
-
   public SuccessAcceptedResponse message(@javax.annotation.Nullable String message) {
+    
     this.message = message;
     return this;
   }
@@ -99,16 +85,22 @@ public class SuccessAcceptedResponse {
    * @return message
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_MESSAGE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getMessage() {
     return message;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_MESSAGE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMessage(@javax.annotation.Nullable String message) {
     this.message = message;
   }
 
-
   public SuccessAcceptedResponse resultHandler(@javax.annotation.Nullable String resultHandler) {
+    
     this.resultHandler = resultHandler;
     return this;
   }
@@ -118,14 +110,19 @@ public class SuccessAcceptedResponse {
    * @return resultHandler
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_RESULT_HANDLER, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getResultHandler() {
     return resultHandler;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_RESULT_HANDLER, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setResultHandler(@javax.annotation.Nullable String resultHandler) {
     this.resultHandler = resultHandler;
   }
-
 
 
   @Override
@@ -169,98 +166,5 @@ public class SuccessAcceptedResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("code", "message", "resultHandler"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(0);
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to SuccessAcceptedResponse
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!SuccessAcceptedResponse.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in SuccessAcceptedResponse is not found in the empty JSON string", SuccessAcceptedResponse.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!SuccessAcceptedResponse.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `SuccessAcceptedResponse` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if ((jsonObj.get("code") != null && !jsonObj.get("code").isJsonNull()) && !jsonObj.get("code").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `code` to be a primitive type in the JSON string but got `%s`", jsonObj.get("code").toString()));
-      }
-      if ((jsonObj.get("message") != null && !jsonObj.get("message").isJsonNull()) && !jsonObj.get("message").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("message").toString()));
-      }
-      if ((jsonObj.get("resultHandler") != null && !jsonObj.get("resultHandler").isJsonNull()) && !jsonObj.get("resultHandler").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `resultHandler` to be a primitive type in the JSON string but got `%s`", jsonObj.get("resultHandler").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!SuccessAcceptedResponse.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'SuccessAcceptedResponse' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<SuccessAcceptedResponse> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(SuccessAcceptedResponse.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<SuccessAcceptedResponse>() {
-           @Override
-           public void write(JsonWriter out, SuccessAcceptedResponse value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public SuccessAcceptedResponse read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of SuccessAcceptedResponse given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of SuccessAcceptedResponse
-   * @throws IOException if the JSON string is invalid with respect to SuccessAcceptedResponse
-   */
-  public static SuccessAcceptedResponse fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, SuccessAcceptedResponse.class);
-  }
-
-  /**
-   * Convert an instance of SuccessAcceptedResponse to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
-
 

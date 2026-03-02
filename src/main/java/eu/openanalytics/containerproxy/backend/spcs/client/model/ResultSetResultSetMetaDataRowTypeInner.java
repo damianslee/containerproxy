@@ -14,71 +14,51 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * ResultSetResultSetMetaDataRowTypeInner
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:47:56.670263400+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  ResultSetResultSetMetaDataRowTypeInner.JSON_PROPERTY_NAME,
+  ResultSetResultSetMetaDataRowTypeInner.JSON_PROPERTY_TYPE,
+  ResultSetResultSetMetaDataRowTypeInner.JSON_PROPERTY_LENGTH,
+  ResultSetResultSetMetaDataRowTypeInner.JSON_PROPERTY_PRECISION,
+  ResultSetResultSetMetaDataRowTypeInner.JSON_PROPERTY_SCALE,
+  ResultSetResultSetMetaDataRowTypeInner.JSON_PROPERTY_NULLABLE
+})
+@JsonTypeName("ResultSet_resultSetMetaData_rowType_inner")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:35.116838100+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class ResultSetResultSetMetaDataRowTypeInner {
-  public static final String SERIALIZED_NAME_NAME = "name";
-  @SerializedName(SERIALIZED_NAME_NAME)
+  public static final String JSON_PROPERTY_NAME = "name";
   @javax.annotation.Nullable
   private String name;
 
-  public static final String SERIALIZED_NAME_TYPE = "type";
-  @SerializedName(SERIALIZED_NAME_TYPE)
+  public static final String JSON_PROPERTY_TYPE = "type";
   @javax.annotation.Nullable
   private String type;
 
-  public static final String SERIALIZED_NAME_LENGTH = "length";
-  @SerializedName(SERIALIZED_NAME_LENGTH)
+  public static final String JSON_PROPERTY_LENGTH = "length";
   @javax.annotation.Nullable
   private Long length;
 
-  public static final String SERIALIZED_NAME_PRECISION = "precision";
-  @SerializedName(SERIALIZED_NAME_PRECISION)
+  public static final String JSON_PROPERTY_PRECISION = "precision";
   @javax.annotation.Nullable
   private Long precision;
 
-  public static final String SERIALIZED_NAME_SCALE = "scale";
-  @SerializedName(SERIALIZED_NAME_SCALE)
+  public static final String JSON_PROPERTY_SCALE = "scale";
   @javax.annotation.Nullable
   private Long scale;
 
-  public static final String SERIALIZED_NAME_NULLABLE = "nullable";
-  @SerializedName(SERIALIZED_NAME_NULLABLE)
+  public static final String JSON_PROPERTY_NULLABLE = "nullable";
   @javax.annotation.Nullable
   private Boolean nullable;
 
@@ -86,6 +66,7 @@ public class ResultSetResultSetMetaDataRowTypeInner {
   }
 
   public ResultSetResultSetMetaDataRowTypeInner name(@javax.annotation.Nullable String name) {
+    
     this.name = name;
     return this;
   }
@@ -95,16 +76,22 @@ public class ResultSetResultSetMetaDataRowTypeInner {
    * @return name
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getName() {
     return name;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setName(@javax.annotation.Nullable String name) {
     this.name = name;
   }
 
-
   public ResultSetResultSetMetaDataRowTypeInner type(@javax.annotation.Nullable String type) {
+    
     this.type = type;
     return this;
   }
@@ -114,16 +101,22 @@ public class ResultSetResultSetMetaDataRowTypeInner {
    * @return type
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_TYPE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getType() {
     return type;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_TYPE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setType(@javax.annotation.Nullable String type) {
     this.type = type;
   }
 
-
   public ResultSetResultSetMetaDataRowTypeInner length(@javax.annotation.Nullable Long length) {
+    
     this.length = length;
     return this;
   }
@@ -134,16 +127,22 @@ public class ResultSetResultSetMetaDataRowTypeInner {
    * @return length
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_LENGTH, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getLength() {
     return length;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_LENGTH, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setLength(@javax.annotation.Nullable Long length) {
     this.length = length;
   }
 
-
   public ResultSetResultSetMetaDataRowTypeInner precision(@javax.annotation.Nullable Long precision) {
+    
     this.precision = precision;
     return this;
   }
@@ -154,16 +153,22 @@ public class ResultSetResultSetMetaDataRowTypeInner {
    * @return precision
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_PRECISION, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getPrecision() {
     return precision;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_PRECISION, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPrecision(@javax.annotation.Nullable Long precision) {
     this.precision = precision;
   }
 
-
   public ResultSetResultSetMetaDataRowTypeInner scale(@javax.annotation.Nullable Long scale) {
+    
     this.scale = scale;
     return this;
   }
@@ -174,16 +179,22 @@ public class ResultSetResultSetMetaDataRowTypeInner {
    * @return scale
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SCALE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getScale() {
     return scale;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_SCALE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setScale(@javax.annotation.Nullable Long scale) {
     this.scale = scale;
   }
 
-
   public ResultSetResultSetMetaDataRowTypeInner nullable(@javax.annotation.Nullable Boolean nullable) {
+    
     this.nullable = nullable;
     return this;
   }
@@ -193,14 +204,19 @@ public class ResultSetResultSetMetaDataRowTypeInner {
    * @return nullable
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_NULLABLE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Boolean getNullable() {
     return nullable;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_NULLABLE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setNullable(@javax.annotation.Nullable Boolean nullable) {
     this.nullable = nullable;
   }
-
 
 
   @Override
@@ -250,94 +266,5 @@ public class ResultSetResultSetMetaDataRowTypeInner {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("name", "type", "length", "precision", "scale", "nullable"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(0);
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to ResultSetResultSetMetaDataRowTypeInner
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!ResultSetResultSetMetaDataRowTypeInner.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in ResultSetResultSetMetaDataRowTypeInner is not found in the empty JSON string", ResultSetResultSetMetaDataRowTypeInner.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!ResultSetResultSetMetaDataRowTypeInner.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ResultSetResultSetMetaDataRowTypeInner` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if ((jsonObj.get("name") != null && !jsonObj.get("name").isJsonNull()) && !jsonObj.get("name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("name").toString()));
-      }
-      if ((jsonObj.get("type") != null && !jsonObj.get("type").isJsonNull()) && !jsonObj.get("type").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("type").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ResultSetResultSetMetaDataRowTypeInner.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ResultSetResultSetMetaDataRowTypeInner' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ResultSetResultSetMetaDataRowTypeInner> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ResultSetResultSetMetaDataRowTypeInner.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ResultSetResultSetMetaDataRowTypeInner>() {
-           @Override
-           public void write(JsonWriter out, ResultSetResultSetMetaDataRowTypeInner value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ResultSetResultSetMetaDataRowTypeInner read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of ResultSetResultSetMetaDataRowTypeInner given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of ResultSetResultSetMetaDataRowTypeInner
-   * @throws IOException if the JSON string is invalid with respect to ResultSetResultSetMetaDataRowTypeInner
-   */
-  public static ResultSetResultSetMetaDataRowTypeInner fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ResultSetResultSetMetaDataRowTypeInner.class);
-  }
-
-  /**
-   * Convert an instance of ResultSetResultSetMetaDataRowTypeInner to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

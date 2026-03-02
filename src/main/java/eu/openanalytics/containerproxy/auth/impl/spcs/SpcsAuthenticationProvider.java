@@ -23,7 +23,7 @@ package eu.openanalytics.containerproxy.auth.impl.spcs;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.openanalytics.containerproxy.backend.spcs.client.ApiClient;
-import eu.openanalytics.containerproxy.backend.spcs.client.ApiException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import eu.openanalytics.containerproxy.backend.spcs.client.api.StatementsApi;
 import eu.openanalytics.containerproxy.backend.spcs.client.auth.HttpBearerAuth;
 import eu.openanalytics.containerproxy.backend.spcs.client.model.ResultSet;
@@ -163,7 +163,7 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
                     false, // nullable
                     null, // accept
                     "OAUTH" // xSnowflakeAuthorizationTokenType: OAuth token from SPCS ingress
-                );
+                ).block();
                 
                 // Parse result: CURRENT_AVAILABLE_ROLES() returns a JSON array string
                 // ResultSet.data is List<List<String>>, first row, first column contains the JSON array
@@ -185,10 +185,10 @@ public class SpcsAuthenticationProvider implements AuthenticationProvider {
                         }
                     }
                 }
-            } catch (ApiException e) {
+            } catch (WebClientResponseException e) {
                 // Log error details: exception includes message and stack trace
                 logger.warn("Failed to retrieve available roles (user will not have role-based privileges): code={}", 
-                    e.getCode(), e);
+                    e.getStatusCode().value(), e);
                 // Return empty roles on failure (no fallback)
                 return availableRoles;
             } catch (com.fasterxml.jackson.core.JsonProcessingException e) {

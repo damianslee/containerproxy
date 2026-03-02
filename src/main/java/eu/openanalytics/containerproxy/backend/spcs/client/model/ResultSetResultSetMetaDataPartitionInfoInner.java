@@ -14,56 +14,36 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * ResultSetResultSetMetaDataPartitionInfoInner
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:47:56.670263400+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  ResultSetResultSetMetaDataPartitionInfoInner.JSON_PROPERTY_ROW_COUNT,
+  ResultSetResultSetMetaDataPartitionInfoInner.JSON_PROPERTY_COMPRESSED_SIZE,
+  ResultSetResultSetMetaDataPartitionInfoInner.JSON_PROPERTY_UNCOMPRESSED_SIZE
+})
+@JsonTypeName("ResultSet_resultSetMetaData_partitionInfo_inner")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:35.116838100+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class ResultSetResultSetMetaDataPartitionInfoInner {
-  public static final String SERIALIZED_NAME_ROW_COUNT = "rowCount";
-  @SerializedName(SERIALIZED_NAME_ROW_COUNT)
+  public static final String JSON_PROPERTY_ROW_COUNT = "rowCount";
   @javax.annotation.Nullable
   private Long rowCount;
 
-  public static final String SERIALIZED_NAME_COMPRESSED_SIZE = "compressedSize";
-  @SerializedName(SERIALIZED_NAME_COMPRESSED_SIZE)
+  public static final String JSON_PROPERTY_COMPRESSED_SIZE = "compressedSize";
   @javax.annotation.Nullable
   private Long compressedSize;
 
-  public static final String SERIALIZED_NAME_UNCOMPRESSED_SIZE = "uncompressedSize";
-  @SerializedName(SERIALIZED_NAME_UNCOMPRESSED_SIZE)
+  public static final String JSON_PROPERTY_UNCOMPRESSED_SIZE = "uncompressedSize";
   @javax.annotation.Nullable
   private Long uncompressedSize;
 
@@ -71,6 +51,7 @@ public class ResultSetResultSetMetaDataPartitionInfoInner {
   }
 
   public ResultSetResultSetMetaDataPartitionInfoInner rowCount(@javax.annotation.Nullable Long rowCount) {
+    
     this.rowCount = rowCount;
     return this;
   }
@@ -81,16 +62,22 @@ public class ResultSetResultSetMetaDataPartitionInfoInner {
    * @return rowCount
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_ROW_COUNT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getRowCount() {
     return rowCount;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_ROW_COUNT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setRowCount(@javax.annotation.Nullable Long rowCount) {
     this.rowCount = rowCount;
   }
 
-
   public ResultSetResultSetMetaDataPartitionInfoInner compressedSize(@javax.annotation.Nullable Long compressedSize) {
+    
     this.compressedSize = compressedSize;
     return this;
   }
@@ -101,16 +88,22 @@ public class ResultSetResultSetMetaDataPartitionInfoInner {
    * @return compressedSize
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_COMPRESSED_SIZE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getCompressedSize() {
     return compressedSize;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_COMPRESSED_SIZE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setCompressedSize(@javax.annotation.Nullable Long compressedSize) {
     this.compressedSize = compressedSize;
   }
 
-
   public ResultSetResultSetMetaDataPartitionInfoInner uncompressedSize(@javax.annotation.Nullable Long uncompressedSize) {
+    
     this.uncompressedSize = uncompressedSize;
     return this;
   }
@@ -121,14 +114,19 @@ public class ResultSetResultSetMetaDataPartitionInfoInner {
    * @return uncompressedSize
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_UNCOMPRESSED_SIZE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getUncompressedSize() {
     return uncompressedSize;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_UNCOMPRESSED_SIZE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setUncompressedSize(@javax.annotation.Nullable Long uncompressedSize) {
     this.uncompressedSize = uncompressedSize;
   }
-
 
 
   @Override
@@ -172,88 +170,5 @@ public class ResultSetResultSetMetaDataPartitionInfoInner {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("rowCount", "compressedSize", "uncompressedSize"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(0);
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to ResultSetResultSetMetaDataPartitionInfoInner
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!ResultSetResultSetMetaDataPartitionInfoInner.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in ResultSetResultSetMetaDataPartitionInfoInner is not found in the empty JSON string", ResultSetResultSetMetaDataPartitionInfoInner.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!ResultSetResultSetMetaDataPartitionInfoInner.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ResultSetResultSetMetaDataPartitionInfoInner` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ResultSetResultSetMetaDataPartitionInfoInner.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ResultSetResultSetMetaDataPartitionInfoInner' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ResultSetResultSetMetaDataPartitionInfoInner> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ResultSetResultSetMetaDataPartitionInfoInner.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ResultSetResultSetMetaDataPartitionInfoInner>() {
-           @Override
-           public void write(JsonWriter out, ResultSetResultSetMetaDataPartitionInfoInner value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ResultSetResultSetMetaDataPartitionInfoInner read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of ResultSetResultSetMetaDataPartitionInfoInner given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of ResultSetResultSetMetaDataPartitionInfoInner
-   * @throws IOException if the JSON string is invalid with respect to ResultSetResultSetMetaDataPartitionInfoInner
-   */
-  public static ResultSetResultSetMetaDataPartitionInfoInner fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ResultSetResultSetMetaDataPartitionInfoInner.class);
-  }
-
-  /**
-   * Convert an instance of ResultSetResultSetMetaDataPartitionInfoInner to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

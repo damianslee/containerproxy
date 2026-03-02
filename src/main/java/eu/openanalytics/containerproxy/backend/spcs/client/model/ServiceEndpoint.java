@@ -14,85 +14,68 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * ServiceEndpoint
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:47:48.337179400+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  ServiceEndpoint.JSON_PROPERTY_NAME,
+  ServiceEndpoint.JSON_PROPERTY_PORT,
+  ServiceEndpoint.JSON_PROPERTY_PORT_RANGE,
+  ServiceEndpoint.JSON_PROPERTY_PROTOCOL,
+  ServiceEndpoint.JSON_PROPERTY_IS_PUBLIC,
+  ServiceEndpoint.JSON_PROPERTY_INGRESS_URL
+})
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:25.529847700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class ServiceEndpoint {
-  public static final String SERIALIZED_NAME_NAME = "name";
-  @SerializedName(SERIALIZED_NAME_NAME)
+  public static final String JSON_PROPERTY_NAME = "name";
   @javax.annotation.Nullable
   private String name;
 
-  public static final String SERIALIZED_NAME_PORT = "port";
-  @SerializedName(SERIALIZED_NAME_PORT)
+  public static final String JSON_PROPERTY_PORT = "port";
   @javax.annotation.Nullable
   private Integer port;
 
-  public static final String SERIALIZED_NAME_PORT_RANGE = "portRange";
-  @SerializedName(SERIALIZED_NAME_PORT_RANGE)
+  public static final String JSON_PROPERTY_PORT_RANGE = "portRange";
   @javax.annotation.Nullable
   private String portRange;
 
-  public static final String SERIALIZED_NAME_PROTOCOL = "protocol";
-  @SerializedName(SERIALIZED_NAME_PROTOCOL)
+  public static final String JSON_PROPERTY_PROTOCOL = "protocol";
   @javax.annotation.Nullable
   private String protocol = "HTTP";
 
-  public static final String SERIALIZED_NAME_IS_PUBLIC = "is_public";
-  @SerializedName(SERIALIZED_NAME_IS_PUBLIC)
+  public static final String JSON_PROPERTY_IS_PUBLIC = "is_public";
   @javax.annotation.Nullable
   private Boolean isPublic = false;
 
-  public static final String SERIALIZED_NAME_INGRESS_URL = "ingress_url";
-  @SerializedName(SERIALIZED_NAME_INGRESS_URL)
+  public static final String JSON_PROPERTY_INGRESS_URL = "ingress_url";
   @javax.annotation.Nullable
   private String ingressUrl;
 
   public ServiceEndpoint() {
   }
-
+  /**
+   * Constructor with only readonly parameters
+   */
+  @JsonCreator
   public ServiceEndpoint(
-     String ingressUrl
+    @JsonProperty(JSON_PROPERTY_INGRESS_URL) String ingressUrl
   ) {
     this();
     this.ingressUrl = ingressUrl;
   }
 
   public ServiceEndpoint name(@javax.annotation.Nullable String name) {
+    
     this.name = name;
     return this;
   }
@@ -102,16 +85,22 @@ public class ServiceEndpoint {
    * @return name
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getName() {
     return name;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setName(@javax.annotation.Nullable String name) {
     this.name = name;
   }
 
-
   public ServiceEndpoint port(@javax.annotation.Nullable Integer port) {
+    
     this.port = port;
     return this;
   }
@@ -121,16 +110,22 @@ public class ServiceEndpoint {
    * @return port
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_PORT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Integer getPort() {
     return port;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_PORT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPort(@javax.annotation.Nullable Integer port) {
     this.port = port;
   }
 
-
   public ServiceEndpoint portRange(@javax.annotation.Nullable String portRange) {
+    
     this.portRange = portRange;
     return this;
   }
@@ -140,16 +135,22 @@ public class ServiceEndpoint {
    * @return portRange
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_PORT_RANGE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getPortRange() {
     return portRange;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_PORT_RANGE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPortRange(@javax.annotation.Nullable String portRange) {
     this.portRange = portRange;
   }
 
-
   public ServiceEndpoint protocol(@javax.annotation.Nullable String protocol) {
+    
     this.protocol = protocol;
     return this;
   }
@@ -159,16 +160,22 @@ public class ServiceEndpoint {
    * @return protocol
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_PROTOCOL, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getProtocol() {
     return protocol;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_PROTOCOL, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setProtocol(@javax.annotation.Nullable String protocol) {
     this.protocol = protocol;
   }
 
-
   public ServiceEndpoint isPublic(@javax.annotation.Nullable Boolean isPublic) {
+    
     this.isPublic = isPublic;
     return this;
   }
@@ -178,20 +185,28 @@ public class ServiceEndpoint {
    * @return isPublic
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_IS_PUBLIC, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Boolean getIsPublic() {
     return isPublic;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_IS_PUBLIC, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setIsPublic(@javax.annotation.Nullable Boolean isPublic) {
     this.isPublic = isPublic;
   }
-
 
   /**
    * Endpoint URL accessible from the internet.
    * @return ingressUrl
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_INGRESS_URL, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getIngressUrl() {
     return ingressUrl;
   }
@@ -246,101 +261,5 @@ public class ServiceEndpoint {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("name", "port", "portRange", "protocol", "is_public", "ingress_url"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(0);
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to ServiceEndpoint
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!ServiceEndpoint.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in ServiceEndpoint is not found in the empty JSON string", ServiceEndpoint.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!ServiceEndpoint.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ServiceEndpoint` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if ((jsonObj.get("name") != null && !jsonObj.get("name").isJsonNull()) && !jsonObj.get("name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("name").toString()));
-      }
-      if ((jsonObj.get("portRange") != null && !jsonObj.get("portRange").isJsonNull()) && !jsonObj.get("portRange").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `portRange` to be a primitive type in the JSON string but got `%s`", jsonObj.get("portRange").toString()));
-      }
-      if ((jsonObj.get("protocol") != null && !jsonObj.get("protocol").isJsonNull()) && !jsonObj.get("protocol").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `protocol` to be a primitive type in the JSON string but got `%s`", jsonObj.get("protocol").toString()));
-      }
-      if ((jsonObj.get("ingress_url") != null && !jsonObj.get("ingress_url").isJsonNull()) && !jsonObj.get("ingress_url").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `ingress_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("ingress_url").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ServiceEndpoint.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ServiceEndpoint' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ServiceEndpoint> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ServiceEndpoint.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ServiceEndpoint>() {
-           @Override
-           public void write(JsonWriter out, ServiceEndpoint value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ServiceEndpoint read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of ServiceEndpoint given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of ServiceEndpoint
-   * @throws IOException if the JSON string is invalid with respect to ServiceEndpoint
-   */
-  public static ServiceEndpoint fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ServiceEndpoint.class);
-  }
-
-  /**
-   * Convert an instance of ServiceEndpoint to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
-
 

@@ -14,81 +14,61 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * ResultSetResultSetMetaDataParameters
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:47:56.670263400+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  ResultSetResultSetMetaDataParameters.JSON_PROPERTY_BINARY_OUTPUT_FORMAT,
+  ResultSetResultSetMetaDataParameters.JSON_PROPERTY_DATE_OUTPUT_FORMAT,
+  ResultSetResultSetMetaDataParameters.JSON_PROPERTY_TIME_OUTPUT_FORMAT,
+  ResultSetResultSetMetaDataParameters.JSON_PROPERTY_TIMESTAMP_OUTPUT_FORMAT,
+  ResultSetResultSetMetaDataParameters.JSON_PROPERTY_TIMESTAMP_LTZ_OUTPUT_FORMAT,
+  ResultSetResultSetMetaDataParameters.JSON_PROPERTY_TIMESTAMP_NTZ_OUTPUT_FORMAT,
+  ResultSetResultSetMetaDataParameters.JSON_PROPERTY_TIMESTAMP_TZ_OUTPUT_FORMAT,
+  ResultSetResultSetMetaDataParameters.JSON_PROPERTY_MULTI_STATEMENT_COUNT
+})
+@JsonTypeName("ResultSet_resultSetMetaData_parameters")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:35.116838100+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class ResultSetResultSetMetaDataParameters {
-  public static final String SERIALIZED_NAME_BINARY_OUTPUT_FORMAT = "binary_output_format";
-  @SerializedName(SERIALIZED_NAME_BINARY_OUTPUT_FORMAT)
+  public static final String JSON_PROPERTY_BINARY_OUTPUT_FORMAT = "binary_output_format";
   @javax.annotation.Nullable
   private String binaryOutputFormat;
 
-  public static final String SERIALIZED_NAME_DATE_OUTPUT_FORMAT = "date_output_format";
-  @SerializedName(SERIALIZED_NAME_DATE_OUTPUT_FORMAT)
+  public static final String JSON_PROPERTY_DATE_OUTPUT_FORMAT = "date_output_format";
   @javax.annotation.Nullable
   private String dateOutputFormat;
 
-  public static final String SERIALIZED_NAME_TIME_OUTPUT_FORMAT = "time_output_format";
-  @SerializedName(SERIALIZED_NAME_TIME_OUTPUT_FORMAT)
+  public static final String JSON_PROPERTY_TIME_OUTPUT_FORMAT = "time_output_format";
   @javax.annotation.Nullable
   private String timeOutputFormat;
 
-  public static final String SERIALIZED_NAME_TIMESTAMP_OUTPUT_FORMAT = "timestamp_output_format";
-  @SerializedName(SERIALIZED_NAME_TIMESTAMP_OUTPUT_FORMAT)
+  public static final String JSON_PROPERTY_TIMESTAMP_OUTPUT_FORMAT = "timestamp_output_format";
   @javax.annotation.Nullable
   private String timestampOutputFormat;
 
-  public static final String SERIALIZED_NAME_TIMESTAMP_LTZ_OUTPUT_FORMAT = "timestamp_ltz_output_format";
-  @SerializedName(SERIALIZED_NAME_TIMESTAMP_LTZ_OUTPUT_FORMAT)
+  public static final String JSON_PROPERTY_TIMESTAMP_LTZ_OUTPUT_FORMAT = "timestamp_ltz_output_format";
   @javax.annotation.Nullable
   private String timestampLtzOutputFormat;
 
-  public static final String SERIALIZED_NAME_TIMESTAMP_NTZ_OUTPUT_FORMAT = "timestamp_ntz_output_format";
-  @SerializedName(SERIALIZED_NAME_TIMESTAMP_NTZ_OUTPUT_FORMAT)
+  public static final String JSON_PROPERTY_TIMESTAMP_NTZ_OUTPUT_FORMAT = "timestamp_ntz_output_format";
   @javax.annotation.Nullable
   private String timestampNtzOutputFormat;
 
-  public static final String SERIALIZED_NAME_TIMESTAMP_TZ_OUTPUT_FORMAT = "timestamp_tz_output_format";
-  @SerializedName(SERIALIZED_NAME_TIMESTAMP_TZ_OUTPUT_FORMAT)
+  public static final String JSON_PROPERTY_TIMESTAMP_TZ_OUTPUT_FORMAT = "timestamp_tz_output_format";
   @javax.annotation.Nullable
   private String timestampTzOutputFormat;
 
-  public static final String SERIALIZED_NAME_MULTI_STATEMENT_COUNT = "multi_statement_count";
-  @SerializedName(SERIALIZED_NAME_MULTI_STATEMENT_COUNT)
+  public static final String JSON_PROPERTY_MULTI_STATEMENT_COUNT = "multi_statement_count";
   @javax.annotation.Nullable
   private Integer multiStatementCount;
 
@@ -96,6 +76,7 @@ public class ResultSetResultSetMetaDataParameters {
   }
 
   public ResultSetResultSetMetaDataParameters binaryOutputFormat(@javax.annotation.Nullable String binaryOutputFormat) {
+    
     this.binaryOutputFormat = binaryOutputFormat;
     return this;
   }
@@ -105,16 +86,22 @@ public class ResultSetResultSetMetaDataParameters {
    * @return binaryOutputFormat
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_BINARY_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getBinaryOutputFormat() {
     return binaryOutputFormat;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_BINARY_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setBinaryOutputFormat(@javax.annotation.Nullable String binaryOutputFormat) {
     this.binaryOutputFormat = binaryOutputFormat;
   }
 
-
   public ResultSetResultSetMetaDataParameters dateOutputFormat(@javax.annotation.Nullable String dateOutputFormat) {
+    
     this.dateOutputFormat = dateOutputFormat;
     return this;
   }
@@ -124,16 +111,22 @@ public class ResultSetResultSetMetaDataParameters {
    * @return dateOutputFormat
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_DATE_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getDateOutputFormat() {
     return dateOutputFormat;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_DATE_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setDateOutputFormat(@javax.annotation.Nullable String dateOutputFormat) {
     this.dateOutputFormat = dateOutputFormat;
   }
 
-
   public ResultSetResultSetMetaDataParameters timeOutputFormat(@javax.annotation.Nullable String timeOutputFormat) {
+    
     this.timeOutputFormat = timeOutputFormat;
     return this;
   }
@@ -143,16 +136,22 @@ public class ResultSetResultSetMetaDataParameters {
    * @return timeOutputFormat
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_TIME_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getTimeOutputFormat() {
     return timeOutputFormat;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_TIME_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setTimeOutputFormat(@javax.annotation.Nullable String timeOutputFormat) {
     this.timeOutputFormat = timeOutputFormat;
   }
 
-
   public ResultSetResultSetMetaDataParameters timestampOutputFormat(@javax.annotation.Nullable String timestampOutputFormat) {
+    
     this.timestampOutputFormat = timestampOutputFormat;
     return this;
   }
@@ -162,16 +161,22 @@ public class ResultSetResultSetMetaDataParameters {
    * @return timestampOutputFormat
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_TIMESTAMP_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getTimestampOutputFormat() {
     return timestampOutputFormat;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_TIMESTAMP_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setTimestampOutputFormat(@javax.annotation.Nullable String timestampOutputFormat) {
     this.timestampOutputFormat = timestampOutputFormat;
   }
 
-
   public ResultSetResultSetMetaDataParameters timestampLtzOutputFormat(@javax.annotation.Nullable String timestampLtzOutputFormat) {
+    
     this.timestampLtzOutputFormat = timestampLtzOutputFormat;
     return this;
   }
@@ -181,16 +186,22 @@ public class ResultSetResultSetMetaDataParameters {
    * @return timestampLtzOutputFormat
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_TIMESTAMP_LTZ_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getTimestampLtzOutputFormat() {
     return timestampLtzOutputFormat;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_TIMESTAMP_LTZ_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setTimestampLtzOutputFormat(@javax.annotation.Nullable String timestampLtzOutputFormat) {
     this.timestampLtzOutputFormat = timestampLtzOutputFormat;
   }
 
-
   public ResultSetResultSetMetaDataParameters timestampNtzOutputFormat(@javax.annotation.Nullable String timestampNtzOutputFormat) {
+    
     this.timestampNtzOutputFormat = timestampNtzOutputFormat;
     return this;
   }
@@ -200,16 +211,22 @@ public class ResultSetResultSetMetaDataParameters {
    * @return timestampNtzOutputFormat
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_TIMESTAMP_NTZ_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getTimestampNtzOutputFormat() {
     return timestampNtzOutputFormat;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_TIMESTAMP_NTZ_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setTimestampNtzOutputFormat(@javax.annotation.Nullable String timestampNtzOutputFormat) {
     this.timestampNtzOutputFormat = timestampNtzOutputFormat;
   }
 
-
   public ResultSetResultSetMetaDataParameters timestampTzOutputFormat(@javax.annotation.Nullable String timestampTzOutputFormat) {
+    
     this.timestampTzOutputFormat = timestampTzOutputFormat;
     return this;
   }
@@ -219,16 +236,22 @@ public class ResultSetResultSetMetaDataParameters {
    * @return timestampTzOutputFormat
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_TIMESTAMP_TZ_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getTimestampTzOutputFormat() {
     return timestampTzOutputFormat;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_TIMESTAMP_TZ_OUTPUT_FORMAT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setTimestampTzOutputFormat(@javax.annotation.Nullable String timestampTzOutputFormat) {
     this.timestampTzOutputFormat = timestampTzOutputFormat;
   }
 
-
   public ResultSetResultSetMetaDataParameters multiStatementCount(@javax.annotation.Nullable Integer multiStatementCount) {
+    
     this.multiStatementCount = multiStatementCount;
     return this;
   }
@@ -238,14 +261,19 @@ public class ResultSetResultSetMetaDataParameters {
    * @return multiStatementCount
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_MULTI_STATEMENT_COUNT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Integer getMultiStatementCount() {
     return multiStatementCount;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_MULTI_STATEMENT_COUNT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMultiStatementCount(@javax.annotation.Nullable Integer multiStatementCount) {
     this.multiStatementCount = multiStatementCount;
   }
-
 
 
   @Override
@@ -299,109 +327,5 @@ public class ResultSetResultSetMetaDataParameters {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("binary_output_format", "date_output_format", "time_output_format", "timestamp_output_format", "timestamp_ltz_output_format", "timestamp_ntz_output_format", "timestamp_tz_output_format", "multi_statement_count"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(0);
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to ResultSetResultSetMetaDataParameters
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!ResultSetResultSetMetaDataParameters.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in ResultSetResultSetMetaDataParameters is not found in the empty JSON string", ResultSetResultSetMetaDataParameters.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!ResultSetResultSetMetaDataParameters.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ResultSetResultSetMetaDataParameters` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if ((jsonObj.get("binary_output_format") != null && !jsonObj.get("binary_output_format").isJsonNull()) && !jsonObj.get("binary_output_format").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `binary_output_format` to be a primitive type in the JSON string but got `%s`", jsonObj.get("binary_output_format").toString()));
-      }
-      if ((jsonObj.get("date_output_format") != null && !jsonObj.get("date_output_format").isJsonNull()) && !jsonObj.get("date_output_format").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `date_output_format` to be a primitive type in the JSON string but got `%s`", jsonObj.get("date_output_format").toString()));
-      }
-      if ((jsonObj.get("time_output_format") != null && !jsonObj.get("time_output_format").isJsonNull()) && !jsonObj.get("time_output_format").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `time_output_format` to be a primitive type in the JSON string but got `%s`", jsonObj.get("time_output_format").toString()));
-      }
-      if ((jsonObj.get("timestamp_output_format") != null && !jsonObj.get("timestamp_output_format").isJsonNull()) && !jsonObj.get("timestamp_output_format").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `timestamp_output_format` to be a primitive type in the JSON string but got `%s`", jsonObj.get("timestamp_output_format").toString()));
-      }
-      if ((jsonObj.get("timestamp_ltz_output_format") != null && !jsonObj.get("timestamp_ltz_output_format").isJsonNull()) && !jsonObj.get("timestamp_ltz_output_format").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `timestamp_ltz_output_format` to be a primitive type in the JSON string but got `%s`", jsonObj.get("timestamp_ltz_output_format").toString()));
-      }
-      if ((jsonObj.get("timestamp_ntz_output_format") != null && !jsonObj.get("timestamp_ntz_output_format").isJsonNull()) && !jsonObj.get("timestamp_ntz_output_format").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `timestamp_ntz_output_format` to be a primitive type in the JSON string but got `%s`", jsonObj.get("timestamp_ntz_output_format").toString()));
-      }
-      if ((jsonObj.get("timestamp_tz_output_format") != null && !jsonObj.get("timestamp_tz_output_format").isJsonNull()) && !jsonObj.get("timestamp_tz_output_format").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `timestamp_tz_output_format` to be a primitive type in the JSON string but got `%s`", jsonObj.get("timestamp_tz_output_format").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ResultSetResultSetMetaDataParameters.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ResultSetResultSetMetaDataParameters' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ResultSetResultSetMetaDataParameters> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ResultSetResultSetMetaDataParameters.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ResultSetResultSetMetaDataParameters>() {
-           @Override
-           public void write(JsonWriter out, ResultSetResultSetMetaDataParameters value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ResultSetResultSetMetaDataParameters read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of ResultSetResultSetMetaDataParameters given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of ResultSetResultSetMetaDataParameters
-   * @throws IOException if the JSON string is invalid with respect to ResultSetResultSetMetaDataParameters
-   */
-  public static ResultSetResultSetMetaDataParameters fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ResultSetResultSetMetaDataParameters.class);
-  }
-
-  /**
-   * Convert an instance of ResultSetResultSetMetaDataParameters to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

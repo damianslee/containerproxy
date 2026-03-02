@@ -14,82 +14,62 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import eu.openanalytics.containerproxy.backend.spcs.client.model.SubmitStatementRequestParameters;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import eu.openanalytics.containerproxy.backend.spcs.client.model.SubmitStatementRequestParameters;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * SubmitStatementRequest
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:47:56.670263400+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  SubmitStatementRequest.JSON_PROPERTY_STATEMENT,
+  SubmitStatementRequest.JSON_PROPERTY_TIMEOUT,
+  SubmitStatementRequest.JSON_PROPERTY_DATABASE,
+  SubmitStatementRequest.JSON_PROPERTY_SCHEMA,
+  SubmitStatementRequest.JSON_PROPERTY_WAREHOUSE,
+  SubmitStatementRequest.JSON_PROPERTY_ROLE,
+  SubmitStatementRequest.JSON_PROPERTY_BINDINGS,
+  SubmitStatementRequest.JSON_PROPERTY_PARAMETERS
+})
+@JsonTypeName("SubmitStatement_request")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:35.116838100+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class SubmitStatementRequest {
-  public static final String SERIALIZED_NAME_STATEMENT = "statement";
-  @SerializedName(SERIALIZED_NAME_STATEMENT)
+  public static final String JSON_PROPERTY_STATEMENT = "statement";
   @javax.annotation.Nullable
   private String statement;
 
-  public static final String SERIALIZED_NAME_TIMEOUT = "timeout";
-  @SerializedName(SERIALIZED_NAME_TIMEOUT)
+  public static final String JSON_PROPERTY_TIMEOUT = "timeout";
   @javax.annotation.Nullable
   private Long timeout;
 
-  public static final String SERIALIZED_NAME_DATABASE = "database";
-  @SerializedName(SERIALIZED_NAME_DATABASE)
+  public static final String JSON_PROPERTY_DATABASE = "database";
   @javax.annotation.Nullable
   private String database;
 
-  public static final String SERIALIZED_NAME_SCHEMA = "schema";
-  @SerializedName(SERIALIZED_NAME_SCHEMA)
+  public static final String JSON_PROPERTY_SCHEMA = "schema";
   @javax.annotation.Nullable
   private String schema;
 
-  public static final String SERIALIZED_NAME_WAREHOUSE = "warehouse";
-  @SerializedName(SERIALIZED_NAME_WAREHOUSE)
+  public static final String JSON_PROPERTY_WAREHOUSE = "warehouse";
   @javax.annotation.Nullable
   private String warehouse;
 
-  public static final String SERIALIZED_NAME_ROLE = "role";
-  @SerializedName(SERIALIZED_NAME_ROLE)
+  public static final String JSON_PROPERTY_ROLE = "role";
   @javax.annotation.Nullable
   private String role;
 
-  public static final String SERIALIZED_NAME_BINDINGS = "bindings";
-  @SerializedName(SERIALIZED_NAME_BINDINGS)
+  public static final String JSON_PROPERTY_BINDINGS = "bindings";
   @javax.annotation.Nullable
   private Object bindings;
 
-  public static final String SERIALIZED_NAME_PARAMETERS = "parameters";
-  @SerializedName(SERIALIZED_NAME_PARAMETERS)
+  public static final String JSON_PROPERTY_PARAMETERS = "parameters";
   @javax.annotation.Nullable
   private SubmitStatementRequestParameters parameters;
 
@@ -97,6 +77,7 @@ public class SubmitStatementRequest {
   }
 
   public SubmitStatementRequest statement(@javax.annotation.Nullable String statement) {
+    
     this.statement = statement;
     return this;
   }
@@ -106,16 +87,22 @@ public class SubmitStatementRequest {
    * @return statement
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_STATEMENT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getStatement() {
     return statement;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_STATEMENT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setStatement(@javax.annotation.Nullable String statement) {
     this.statement = statement;
   }
 
-
   public SubmitStatementRequest timeout(@javax.annotation.Nullable Long timeout) {
+    
     this.timeout = timeout;
     return this;
   }
@@ -126,16 +113,22 @@ public class SubmitStatementRequest {
    * @return timeout
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_TIMEOUT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getTimeout() {
     return timeout;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_TIMEOUT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setTimeout(@javax.annotation.Nullable Long timeout) {
     this.timeout = timeout;
   }
 
-
   public SubmitStatementRequest database(@javax.annotation.Nullable String database) {
+    
     this.database = database;
     return this;
   }
@@ -145,16 +138,22 @@ public class SubmitStatementRequest {
    * @return database
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_DATABASE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getDatabase() {
     return database;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_DATABASE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setDatabase(@javax.annotation.Nullable String database) {
     this.database = database;
   }
 
-
   public SubmitStatementRequest schema(@javax.annotation.Nullable String schema) {
+    
     this.schema = schema;
     return this;
   }
@@ -164,16 +163,22 @@ public class SubmitStatementRequest {
    * @return schema
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SCHEMA, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getSchema() {
     return schema;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_SCHEMA, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSchema(@javax.annotation.Nullable String schema) {
     this.schema = schema;
   }
 
-
   public SubmitStatementRequest warehouse(@javax.annotation.Nullable String warehouse) {
+    
     this.warehouse = warehouse;
     return this;
   }
@@ -183,16 +188,22 @@ public class SubmitStatementRequest {
    * @return warehouse
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_WAREHOUSE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getWarehouse() {
     return warehouse;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_WAREHOUSE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setWarehouse(@javax.annotation.Nullable String warehouse) {
     this.warehouse = warehouse;
   }
 
-
   public SubmitStatementRequest role(@javax.annotation.Nullable String role) {
+    
     this.role = role;
     return this;
   }
@@ -202,16 +213,22 @@ public class SubmitStatementRequest {
    * @return role
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_ROLE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getRole() {
     return role;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_ROLE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setRole(@javax.annotation.Nullable String role) {
     this.role = role;
   }
 
-
   public SubmitStatementRequest bindings(@javax.annotation.Nullable Object bindings) {
+    
     this.bindings = bindings;
     return this;
   }
@@ -221,16 +238,22 @@ public class SubmitStatementRequest {
    * @return bindings
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_BINDINGS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Object getBindings() {
     return bindings;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_BINDINGS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setBindings(@javax.annotation.Nullable Object bindings) {
     this.bindings = bindings;
   }
 
-
   public SubmitStatementRequest parameters(@javax.annotation.Nullable SubmitStatementRequestParameters parameters) {
+    
     this.parameters = parameters;
     return this;
   }
@@ -240,14 +263,19 @@ public class SubmitStatementRequest {
    * @return parameters
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_PARAMETERS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public SubmitStatementRequestParameters getParameters() {
     return parameters;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_PARAMETERS, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setParameters(@javax.annotation.Nullable SubmitStatementRequestParameters parameters) {
     this.parameters = parameters;
   }
-
 
 
   @Override
@@ -301,107 +329,5 @@ public class SubmitStatementRequest {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("statement", "timeout", "database", "schema", "warehouse", "role", "bindings", "parameters"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(0);
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to SubmitStatementRequest
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!SubmitStatementRequest.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in SubmitStatementRequest is not found in the empty JSON string", SubmitStatementRequest.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!SubmitStatementRequest.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `SubmitStatementRequest` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if ((jsonObj.get("statement") != null && !jsonObj.get("statement").isJsonNull()) && !jsonObj.get("statement").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `statement` to be a primitive type in the JSON string but got `%s`", jsonObj.get("statement").toString()));
-      }
-      if ((jsonObj.get("database") != null && !jsonObj.get("database").isJsonNull()) && !jsonObj.get("database").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `database` to be a primitive type in the JSON string but got `%s`", jsonObj.get("database").toString()));
-      }
-      if ((jsonObj.get("schema") != null && !jsonObj.get("schema").isJsonNull()) && !jsonObj.get("schema").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `schema` to be a primitive type in the JSON string but got `%s`", jsonObj.get("schema").toString()));
-      }
-      if ((jsonObj.get("warehouse") != null && !jsonObj.get("warehouse").isJsonNull()) && !jsonObj.get("warehouse").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `warehouse` to be a primitive type in the JSON string but got `%s`", jsonObj.get("warehouse").toString()));
-      }
-      if ((jsonObj.get("role") != null && !jsonObj.get("role").isJsonNull()) && !jsonObj.get("role").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `role` to be a primitive type in the JSON string but got `%s`", jsonObj.get("role").toString()));
-      }
-      // validate the optional field `parameters`
-      if (jsonObj.get("parameters") != null && !jsonObj.get("parameters").isJsonNull()) {
-        SubmitStatementRequestParameters.validateJsonElement(jsonObj.get("parameters"));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!SubmitStatementRequest.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'SubmitStatementRequest' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<SubmitStatementRequest> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(SubmitStatementRequest.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<SubmitStatementRequest>() {
-           @Override
-           public void write(JsonWriter out, SubmitStatementRequest value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public SubmitStatementRequest read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of SubmitStatementRequest given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of SubmitStatementRequest
-   * @throws IOException if the JSON string is invalid with respect to SubmitStatementRequest
-   */
-  public static SubmitStatementRequest fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, SubmitStatementRequest.class);
-  }
-
-  /**
-   * Convert an instance of SubmitStatementRequest to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

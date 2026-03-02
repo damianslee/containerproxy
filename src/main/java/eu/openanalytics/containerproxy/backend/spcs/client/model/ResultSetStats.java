@@ -14,61 +14,41 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * these stats might not be available for each request.
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:47:56.670263400+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  ResultSetStats.JSON_PROPERTY_NUM_ROWS_INSERTED,
+  ResultSetStats.JSON_PROPERTY_NUM_ROWS_UPDATED,
+  ResultSetStats.JSON_PROPERTY_NUM_ROWS_DELETED,
+  ResultSetStats.JSON_PROPERTY_NUM_DUPLICATE_ROWS_UPDATED
+})
+@JsonTypeName("ResultSet_stats")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:35.116838100+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class ResultSetStats {
-  public static final String SERIALIZED_NAME_NUM_ROWS_INSERTED = "numRowsInserted";
-  @SerializedName(SERIALIZED_NAME_NUM_ROWS_INSERTED)
+  public static final String JSON_PROPERTY_NUM_ROWS_INSERTED = "numRowsInserted";
   @javax.annotation.Nullable
   private Long numRowsInserted;
 
-  public static final String SERIALIZED_NAME_NUM_ROWS_UPDATED = "numRowsUpdated";
-  @SerializedName(SERIALIZED_NAME_NUM_ROWS_UPDATED)
+  public static final String JSON_PROPERTY_NUM_ROWS_UPDATED = "numRowsUpdated";
   @javax.annotation.Nullable
   private Long numRowsUpdated;
 
-  public static final String SERIALIZED_NAME_NUM_ROWS_DELETED = "numRowsDeleted";
-  @SerializedName(SERIALIZED_NAME_NUM_ROWS_DELETED)
+  public static final String JSON_PROPERTY_NUM_ROWS_DELETED = "numRowsDeleted";
   @javax.annotation.Nullable
   private Long numRowsDeleted;
 
-  public static final String SERIALIZED_NAME_NUM_DUPLICATE_ROWS_UPDATED = "numDuplicateRowsUpdated";
-  @SerializedName(SERIALIZED_NAME_NUM_DUPLICATE_ROWS_UPDATED)
+  public static final String JSON_PROPERTY_NUM_DUPLICATE_ROWS_UPDATED = "numDuplicateRowsUpdated";
   @javax.annotation.Nullable
   private Long numDuplicateRowsUpdated;
 
@@ -76,6 +56,7 @@ public class ResultSetStats {
   }
 
   public ResultSetStats numRowsInserted(@javax.annotation.Nullable Long numRowsInserted) {
+    
     this.numRowsInserted = numRowsInserted;
     return this;
   }
@@ -86,16 +67,22 @@ public class ResultSetStats {
    * @return numRowsInserted
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_NUM_ROWS_INSERTED, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getNumRowsInserted() {
     return numRowsInserted;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_NUM_ROWS_INSERTED, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setNumRowsInserted(@javax.annotation.Nullable Long numRowsInserted) {
     this.numRowsInserted = numRowsInserted;
   }
 
-
   public ResultSetStats numRowsUpdated(@javax.annotation.Nullable Long numRowsUpdated) {
+    
     this.numRowsUpdated = numRowsUpdated;
     return this;
   }
@@ -106,16 +93,22 @@ public class ResultSetStats {
    * @return numRowsUpdated
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_NUM_ROWS_UPDATED, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getNumRowsUpdated() {
     return numRowsUpdated;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_NUM_ROWS_UPDATED, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setNumRowsUpdated(@javax.annotation.Nullable Long numRowsUpdated) {
     this.numRowsUpdated = numRowsUpdated;
   }
 
-
   public ResultSetStats numRowsDeleted(@javax.annotation.Nullable Long numRowsDeleted) {
+    
     this.numRowsDeleted = numRowsDeleted;
     return this;
   }
@@ -126,16 +119,22 @@ public class ResultSetStats {
    * @return numRowsDeleted
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_NUM_ROWS_DELETED, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getNumRowsDeleted() {
     return numRowsDeleted;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_NUM_ROWS_DELETED, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setNumRowsDeleted(@javax.annotation.Nullable Long numRowsDeleted) {
     this.numRowsDeleted = numRowsDeleted;
   }
 
-
   public ResultSetStats numDuplicateRowsUpdated(@javax.annotation.Nullable Long numDuplicateRowsUpdated) {
+    
     this.numDuplicateRowsUpdated = numDuplicateRowsUpdated;
     return this;
   }
@@ -146,14 +145,19 @@ public class ResultSetStats {
    * @return numDuplicateRowsUpdated
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_NUM_DUPLICATE_ROWS_UPDATED, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getNumDuplicateRowsUpdated() {
     return numDuplicateRowsUpdated;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_NUM_DUPLICATE_ROWS_UPDATED, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setNumDuplicateRowsUpdated(@javax.annotation.Nullable Long numDuplicateRowsUpdated) {
     this.numDuplicateRowsUpdated = numDuplicateRowsUpdated;
   }
-
 
 
   @Override
@@ -199,88 +203,5 @@ public class ResultSetStats {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("numRowsInserted", "numRowsUpdated", "numRowsDeleted", "numDuplicateRowsUpdated"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(0);
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to ResultSetStats
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!ResultSetStats.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in ResultSetStats is not found in the empty JSON string", ResultSetStats.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!ResultSetStats.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ResultSetStats` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ResultSetStats.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ResultSetStats' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ResultSetStats> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ResultSetStats.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ResultSetStats>() {
-           @Override
-           public void write(JsonWriter out, ResultSetStats value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ResultSetStats read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of ResultSetStats given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of ResultSetStats
-   * @throws IOException if the JSON string is invalid with respect to ResultSetStats
-   */
-  public static ResultSetStats fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ResultSetStats.class);
-  }
-
-  /**
-   * Convert an instance of ResultSetStats to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

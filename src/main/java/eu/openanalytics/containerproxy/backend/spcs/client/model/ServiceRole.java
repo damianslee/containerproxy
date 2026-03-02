@@ -14,67 +14,49 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.time.OffsetDateTime;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * ServiceRole
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:47:48.337179400+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  ServiceRole.JSON_PROPERTY_CREATED_ON,
+  ServiceRole.JSON_PROPERTY_NAME,
+  ServiceRole.JSON_PROPERTY_COMMENT
+})
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:25.529847700+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class ServiceRole {
-  public static final String SERIALIZED_NAME_CREATED_ON = "created_on";
-  @SerializedName(SERIALIZED_NAME_CREATED_ON)
+  public static final String JSON_PROPERTY_CREATED_ON = "created_on";
   @javax.annotation.Nullable
   private OffsetDateTime createdOn;
 
-  public static final String SERIALIZED_NAME_NAME = "name";
-  @SerializedName(SERIALIZED_NAME_NAME)
+  public static final String JSON_PROPERTY_NAME = "name";
   @javax.annotation.Nullable
   private String name;
 
-  public static final String SERIALIZED_NAME_COMMENT = "comment";
-  @SerializedName(SERIALIZED_NAME_COMMENT)
+  public static final String JSON_PROPERTY_COMMENT = "comment";
   @javax.annotation.Nullable
   private String comment;
 
   public ServiceRole() {
   }
-
+  /**
+   * Constructor with only readonly parameters
+   */
+  @JsonCreator
   public ServiceRole(
-     OffsetDateTime createdOn, 
-     String name, 
-     String comment
+    @JsonProperty(JSON_PROPERTY_CREATED_ON) OffsetDateTime createdOn, 
+    @JsonProperty(JSON_PROPERTY_NAME) String name, 
+    @JsonProperty(JSON_PROPERTY_COMMENT) String comment
   ) {
     this();
     this.createdOn = createdOn;
@@ -87,6 +69,9 @@ public class ServiceRole {
    * @return createdOn
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_CREATED_ON, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public OffsetDateTime getCreatedOn() {
     return createdOn;
   }
@@ -98,6 +83,9 @@ public class ServiceRole {
    * @return name
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_NAME, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getName() {
     return name;
   }
@@ -109,6 +97,9 @@ public class ServiceRole {
    * @return comment
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_COMMENT, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getComment() {
     return comment;
   }
@@ -157,95 +148,5 @@ public class ServiceRole {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("created_on", "name", "comment"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(0);
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to ServiceRole
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!ServiceRole.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in ServiceRole is not found in the empty JSON string", ServiceRole.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!ServiceRole.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ServiceRole` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if ((jsonObj.get("name") != null && !jsonObj.get("name").isJsonNull()) && !jsonObj.get("name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("name").toString()));
-      }
-      if ((jsonObj.get("comment") != null && !jsonObj.get("comment").isJsonNull()) && !jsonObj.get("comment").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `comment` to be a primitive type in the JSON string but got `%s`", jsonObj.get("comment").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ServiceRole.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ServiceRole' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ServiceRole> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ServiceRole.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ServiceRole>() {
-           @Override
-           public void write(JsonWriter out, ServiceRole value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ServiceRole read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of ServiceRole given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of ServiceRole
-   * @throws IOException if the JSON string is invalid with respect to ServiceRole
-   */
-  public static ServiceRole fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ServiceRole.class);
-  }
-
-  /**
-   * Convert an instance of ServiceRole to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
-
 

@@ -14,73 +14,52 @@
 package eu.openanalytics.containerproxy.backend.spcs.client.model;
 
 import java.util.Objects;
-import java.util.Locale;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-import java.net.URI;
 import java.util.Arrays;
-import java.util.UUID;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Locale;
-
-import eu.openanalytics.containerproxy.backend.spcs.client.JSON;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.net.URI;
+import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * QueryFailureStatus
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-12-06T17:47:56.670263400+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
+@JsonPropertyOrder({
+  QueryFailureStatus.JSON_PROPERTY_CODE,
+  QueryFailureStatus.JSON_PROPERTY_SQL_STATE,
+  QueryFailureStatus.JSON_PROPERTY_MESSAGE,
+  QueryFailureStatus.JSON_PROPERTY_STATEMENT_HANDLE,
+  QueryFailureStatus.JSON_PROPERTY_CREATED_ON,
+  QueryFailureStatus.JSON_PROPERTY_STATEMENT_STATUS_URL
+})
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-03-02T16:41:35.116838100+08:00[Australia/Perth]", comments = "Generator version: 7.17.0")
 public class QueryFailureStatus {
-  public static final String SERIALIZED_NAME_CODE = "code";
-  @SerializedName(SERIALIZED_NAME_CODE)
+  public static final String JSON_PROPERTY_CODE = "code";
   @javax.annotation.Nullable
   private String code;
 
-  public static final String SERIALIZED_NAME_SQL_STATE = "sqlState";
-  @SerializedName(SERIALIZED_NAME_SQL_STATE)
+  public static final String JSON_PROPERTY_SQL_STATE = "sqlState";
   @javax.annotation.Nullable
   private String sqlState;
 
-  public static final String SERIALIZED_NAME_MESSAGE = "message";
-  @SerializedName(SERIALIZED_NAME_MESSAGE)
+  public static final String JSON_PROPERTY_MESSAGE = "message";
   @javax.annotation.Nonnull
   private String message;
 
-  public static final String SERIALIZED_NAME_STATEMENT_HANDLE = "statementHandle";
-  @SerializedName(SERIALIZED_NAME_STATEMENT_HANDLE)
+  public static final String JSON_PROPERTY_STATEMENT_HANDLE = "statementHandle";
   @javax.annotation.Nonnull
   private UUID statementHandle;
 
-  public static final String SERIALIZED_NAME_CREATED_ON = "createdOn";
-  @SerializedName(SERIALIZED_NAME_CREATED_ON)
+  public static final String JSON_PROPERTY_CREATED_ON = "createdOn";
   @javax.annotation.Nullable
   private Long createdOn;
 
-  public static final String SERIALIZED_NAME_STATEMENT_STATUS_URL = "statementStatusUrl";
-  @SerializedName(SERIALIZED_NAME_STATEMENT_STATUS_URL)
+  public static final String JSON_PROPERTY_STATEMENT_STATUS_URL = "statementStatusUrl";
   @javax.annotation.Nullable
   private URI statementStatusUrl;
 
@@ -88,6 +67,7 @@ public class QueryFailureStatus {
   }
 
   public QueryFailureStatus code(@javax.annotation.Nullable String code) {
+    
     this.code = code;
     return this;
   }
@@ -97,16 +77,22 @@ public class QueryFailureStatus {
    * @return code
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_CODE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getCode() {
     return code;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_CODE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setCode(@javax.annotation.Nullable String code) {
     this.code = code;
   }
 
-
   public QueryFailureStatus sqlState(@javax.annotation.Nullable String sqlState) {
+    
     this.sqlState = sqlState;
     return this;
   }
@@ -116,16 +102,22 @@ public class QueryFailureStatus {
    * @return sqlState
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_SQL_STATE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public String getSqlState() {
     return sqlState;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_SQL_STATE, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSqlState(@javax.annotation.Nullable String sqlState) {
     this.sqlState = sqlState;
   }
 
-
   public QueryFailureStatus message(@javax.annotation.Nonnull String message) {
+    
     this.message = message;
     return this;
   }
@@ -135,16 +127,22 @@ public class QueryFailureStatus {
    * @return message
    */
   @javax.annotation.Nonnull
+  @JsonProperty(value = JSON_PROPERTY_MESSAGE, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
   public String getMessage() {
     return message;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_MESSAGE, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setMessage(@javax.annotation.Nonnull String message) {
     this.message = message;
   }
 
-
   public QueryFailureStatus statementHandle(@javax.annotation.Nonnull UUID statementHandle) {
+    
     this.statementHandle = statementHandle;
     return this;
   }
@@ -154,16 +152,22 @@ public class QueryFailureStatus {
    * @return statementHandle
    */
   @javax.annotation.Nonnull
+  @JsonProperty(value = JSON_PROPERTY_STATEMENT_HANDLE, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
   public UUID getStatementHandle() {
     return statementHandle;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_STATEMENT_HANDLE, required = true)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStatementHandle(@javax.annotation.Nonnull UUID statementHandle) {
     this.statementHandle = statementHandle;
   }
 
-
   public QueryFailureStatus createdOn(@javax.annotation.Nullable Long createdOn) {
+    
     this.createdOn = createdOn;
     return this;
   }
@@ -173,16 +177,22 @@ public class QueryFailureStatus {
    * @return createdOn
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_CREATED_ON, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public Long getCreatedOn() {
     return createdOn;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_CREATED_ON, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setCreatedOn(@javax.annotation.Nullable Long createdOn) {
     this.createdOn = createdOn;
   }
 
-
   public QueryFailureStatus statementStatusUrl(@javax.annotation.Nullable URI statementStatusUrl) {
+    
     this.statementStatusUrl = statementStatusUrl;
     return this;
   }
@@ -192,14 +202,19 @@ public class QueryFailureStatus {
    * @return statementStatusUrl
    */
   @javax.annotation.Nullable
+  @JsonProperty(value = JSON_PROPERTY_STATEMENT_STATUS_URL, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
   public URI getStatementStatusUrl() {
     return statementStatusUrl;
   }
 
+
+  @JsonProperty(value = JSON_PROPERTY_STATEMENT_STATUS_URL, required = false)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setStatementStatusUrl(@javax.annotation.Nullable URI statementStatusUrl) {
     this.statementStatusUrl = statementStatusUrl;
   }
-
 
 
   @Override
@@ -249,110 +264,5 @@ public class QueryFailureStatus {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("code", "sqlState", "message", "statementHandle", "createdOn", "statementStatusUrl"));
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(Arrays.asList("message", "statementHandle"));
-  }
-
-  /**
-   * Validates the JSON Element and throws an exception if issues found
-   *
-   * @param jsonElement JSON Element
-   * @throws IOException if the JSON Element is invalid with respect to QueryFailureStatus
-   */
-  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
-      if (jsonElement == null) {
-        if (!QueryFailureStatus.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field(s) %s in QueryFailureStatus is not found in the empty JSON string", QueryFailureStatus.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Map.Entry<String, JsonElement> entry : entries) {
-        if (!QueryFailureStatus.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The field `%s` in the JSON string is not defined in the `QueryFailureStatus` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : QueryFailureStatus.openapiRequiredFields) {
-        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format(Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
-        }
-      }
-        JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if ((jsonObj.get("code") != null && !jsonObj.get("code").isJsonNull()) && !jsonObj.get("code").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `code` to be a primitive type in the JSON string but got `%s`", jsonObj.get("code").toString()));
-      }
-      if ((jsonObj.get("sqlState") != null && !jsonObj.get("sqlState").isJsonNull()) && !jsonObj.get("sqlState").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `sqlState` to be a primitive type in the JSON string but got `%s`", jsonObj.get("sqlState").toString()));
-      }
-      if (!jsonObj.get("message").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("message").toString()));
-      }
-      if (!jsonObj.get("statementHandle").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `statementHandle` to be a primitive type in the JSON string but got `%s`", jsonObj.get("statementHandle").toString()));
-      }
-      if ((jsonObj.get("statementStatusUrl") != null && !jsonObj.get("statementStatusUrl").isJsonNull()) && !jsonObj.get("statementStatusUrl").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format(Locale.ROOT, "Expected the field `statementStatusUrl` to be a primitive type in the JSON string but got `%s`", jsonObj.get("statementStatusUrl").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!QueryFailureStatus.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'QueryFailureStatus' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<QueryFailureStatus> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(QueryFailureStatus.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<QueryFailureStatus>() {
-           @Override
-           public void write(JsonWriter out, QueryFailureStatus value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public QueryFailureStatus read(JsonReader in) throws IOException {
-             JsonElement jsonElement = elementAdapter.read(in);
-             validateJsonElement(jsonElement);
-             return thisAdapter.fromJsonTree(jsonElement);
-           }
-
-       }.nullSafe();
-    }
-  }
-
-  /**
-   * Create an instance of QueryFailureStatus given an JSON string
-   *
-   * @param jsonString JSON string
-   * @return An instance of QueryFailureStatus
-   * @throws IOException if the JSON string is invalid with respect to QueryFailureStatus
-   */
-  public static QueryFailureStatus fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, QueryFailureStatus.class);
-  }
-
-  /**
-   * Convert an instance of QueryFailureStatus to an JSON string
-   *
-   * @return JSON string
-   */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 
