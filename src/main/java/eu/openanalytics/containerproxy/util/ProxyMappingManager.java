@@ -1,7 +1,7 @@
 /*
  * ContainerProxy
  *
- * Copyright (C) 2016-2025 Open Analytics
+ * Copyright (C) 2016-2026 Open Analytics
  *
  * ===========================================================================
  *
@@ -258,7 +258,7 @@ public class ProxyMappingManager {
 
         // add headers
         HttpHeaders headers = proxy.getRuntimeObject(HttpHeadersKey.inst);
-        exchange.getRequestHeaders().putAll(headers.getUndertowHeaderMap());
+        exchange.getRequestHeaders().putAll(headers.getUndertowHeaderMap(proxy));
 
         exchange.addResponseWrapper((f, exchange1) -> {
             proxyCacheHeadersService.addAppCacheHeaders(proxy, exchange1);

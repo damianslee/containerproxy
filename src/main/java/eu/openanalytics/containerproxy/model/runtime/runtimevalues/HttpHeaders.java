@@ -1,7 +1,7 @@
 /*
  * ContainerProxy
  *
- * Copyright (C) 2016-2025 Open Analytics
+ * Copyright (C) 2016-2026 Open Analytics
  *
  * ===========================================================================
  *
@@ -22,12 +22,14 @@ package eu.openanalytics.containerproxy.model.runtime.runtimevalues;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import eu.openanalytics.containerproxy.auth.impl.OpenIDAuthenticationBackend;
+import eu.openanalytics.containerproxy.auth.impl.SpcsAuthenticationBackend;
+import eu.openanalytics.containerproxy.model.runtime.Proxy;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,7 +55,9 @@ public class HttpHeaders {
         this.headers = filteredHeaders;
     }
 
-    public HeaderMap getUndertowHeaderMap() {
+    public HeaderMap getUndertowHeaderMap(Proxy proxy) {
+        undertowHeaderMap.putAll(OpenIDAuthenticationBackend.addHeaders(proxy));
+        undertowHeaderMap.putAll(SpcsAuthenticationBackend.addHeaders(proxy));
         return undertowHeaderMap;
     }
 
