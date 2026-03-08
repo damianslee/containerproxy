@@ -28,15 +28,15 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -47,9 +47,9 @@ import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Date;
-import java.net.URLEncoder;
 
 /**
  * Handles keypair authentication for Snowflake SPCS.
@@ -170,44 +170,44 @@ public class SpcsKeypairAuth {
             formData.append("&scope=").append(URLEncoder.encode(scope, StandardCharsets.UTF_8));
             formData.append("&assertion=").append(URLEncoder.encode(jwtToken, StandardCharsets.UTF_8));
             
-            // Create HTTP request
-            RequestBody requestBody = RequestBody.create(
-                formData.toString(),
-                MediaType.parse("application/x-www-form-urlencoded")
-            );
-            
-            Request request = new Request.Builder()
-                .url(oauthTokenUrl)
-                .post(requestBody)
+            HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(30))
+                .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(oauthTokenUrl))
                 .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(formData.toString(), StandardCharsets.UTF_8))
+                .timeout(Duration.ofSeconds(30))
                 .build();
             
-            // Execute request using OkHttpClient
-            OkHttpClient httpClient = new OkHttpClient();
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "No error body";
-                    throw new IOException("OAuth token exchange failed with status " + response.code() + ": " + errorBody);
+            HttpResponse<String> response;
+            try {
+                response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("OAuth token exchange interrupted", e);
+            }
+            int statusCode = response.statusCode();
+            String responseBody = response.body();
+            
+            if (statusCode < 200 || statusCode >= 300) {
+                throw new IOException("OAuth token exchange failed with status " + statusCode + ": " + (responseBody != null ? responseBody : "No error body"));
+            }
+            if (responseBody == null || responseBody.isEmpty()) {
+                throw new IOException("OAuth token exchange returned empty response");
+            }
+            
+            // Format: {"access_token":"...","token_type":"Bearer","expires_in":3600}
+            try {
+                JsonNode jsonResponse = jsonMapper.readTree(responseBody);
+                if (!jsonResponse.has("access_token")) {
+                    throw new IOException("OAuth token exchange response does not contain access_token: " + responseBody);
                 }
-                
-                if (response.body() == null) {
-                    throw new IOException("OAuth token exchange returned empty response");
-                }
-                
-                // Parse JSON response to extract access_token
-                String responseBody = response.body().string();
-                // Format: {"access_token":"...","token_type":"Bearer","expires_in":3600}
-                try {
-                    JsonNode jsonResponse = jsonMapper.readTree(responseBody);
-                    if (!jsonResponse.has("access_token")) {
-                        throw new IOException("OAuth token exchange response does not contain access_token: " + responseBody);
-                    }
-                    String oauthToken = jsonResponse.get("access_token").asText();
-                    log.debug("Successfully exchanged JWT for Snowflake OAuth token (scope: {})", scope);
-                    return oauthToken;
-                } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-                    throw new IOException("OAuth token exchange response is not valid JSON: " + responseBody, e);
-                }
+                String oauthToken = jsonResponse.get("access_token").asText();
+                log.debug("Successfully exchanged JWT for Snowflake OAuth token (scope: {})", scope);
+                return oauthToken;
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                throw new IOException("OAuth token exchange response is not valid JSON: " + responseBody, e);
             }
         } catch (Exception e) {
             if (e instanceof IOException) {

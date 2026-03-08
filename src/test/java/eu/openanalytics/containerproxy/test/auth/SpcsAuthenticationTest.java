@@ -21,19 +21,26 @@
 package eu.openanalytics.containerproxy.test.auth;
 
 import eu.openanalytics.containerproxy.test.helpers.ShinyProxyInstance;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 
 public class SpcsAuthenticationTest {
 
     private static final String SNOWFLAKE_SERVICE_NAME_ENV = "SNOWFLAKE_SERVICE_NAME";
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(120))
+            .requestTimeout(Duration.ofSeconds(120))
+            .followRedirect(HttpClient.Redirect.NEVER)
+            .build();
+
     private String originalServiceName;
 
     @BeforeEach
@@ -64,23 +71,16 @@ public class SpcsAuthenticationTest {
         try (ShinyProxyInstance inst = new ShinyProxyInstance("application-test-spcs-auth.yml")) {
             String baseUrl = "http://localhost:7583";
             String testUsername = "TEST_USER_123";
-            
-            OkHttpClient client = new OkHttpClient.Builder()
-                .callTimeout(Duration.ofSeconds(120))
-                .readTimeout(Duration.ofSeconds(120))
-                .followRedirects(false)
-                .build();
 
-            Request request = new Request.Builder()
-                .url(baseUrl + "/api/proxy")
-                .header("Sf-Context-Current-User", testUsername)
-                .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/proxy"))
+                    .header("Sf-Context-Current-User", testUsername)
+                    .GET()
+                    .build();
 
-            try (Response response = client.newCall(request).execute()) {
-                // Should authenticate successfully and return 200 (or appropriate success code)
-                Assertions.assertEquals(200, response.code());
-                Assertions.assertFalse(response.isRedirect());
-            }
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            Assertions.assertEquals(200, response.statusCode());
+            Assertions.assertFalse(response.previousResponse().isPresent());
         }
     }
 
@@ -92,24 +92,17 @@ public class SpcsAuthenticationTest {
             String baseUrl = "http://localhost:7583";
             String testUsername = "TEST_USER_456";
             String testToken = "TEST_TOKEN_123";
-            
-            OkHttpClient client = new OkHttpClient.Builder()
-                .callTimeout(Duration.ofSeconds(120))
-                .readTimeout(Duration.ofSeconds(120))
-                .followRedirects(false)
-                .build();
 
-            Request request = new Request.Builder()
-                .url(baseUrl + "/api/proxy")
-                .header("Sf-Context-Current-User", testUsername)
-                .header("Sf-Context-Current-User-Token", testToken)
-                .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/proxy"))
+                    .header("Sf-Context-Current-User", testUsername)
+                    .header("Sf-Context-Current-User-Token", testToken)
+                    .GET()
+                    .build();
 
-            try (Response response = client.newCall(request).execute()) {
-                // Should authenticate successfully with both headers
-                Assertions.assertEquals(200, response.code());
-                Assertions.assertFalse(response.isRedirect());
-            }
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            Assertions.assertEquals(200, response.statusCode());
+            Assertions.assertFalse(response.previousResponse().isPresent());
         }
     }
 
@@ -119,24 +112,16 @@ public class SpcsAuthenticationTest {
     public void authenticationFailsWithoutHeader() throws Exception {
         try (ShinyProxyInstance inst = new ShinyProxyInstance("application-test-spcs-auth.yml")) {
             String baseUrl = "http://localhost:7583";
-            
-            OkHttpClient client = new OkHttpClient.Builder()
-                .callTimeout(Duration.ofSeconds(120))
-                .readTimeout(Duration.ofSeconds(120))
-                .followRedirects(false)
-                .build();
 
-            Request request = new Request.Builder()
-                .url(baseUrl + "/api/proxy")
-                // No Sf-Context-Current-User header
-                .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/proxy"))
+                    .GET()
+                    .build();
 
-            try (Response response = client.newCall(request).execute()) {
-                // Should fail authentication - filter returns 401 UNAUTHORIZED
-                Assertions.assertEquals(401, response.code());
-                String responseBody = response.body() != null ? response.body().string() : "";
-                Assertions.assertTrue(responseBody.contains("SPCS authentication failed"));
-            }
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            Assertions.assertEquals(401, response.statusCode());
+            String responseBody = response.body() != null ? response.body() : "";
+            Assertions.assertTrue(responseBody.contains("SPCS authentication failed"));
         }
     }
 
@@ -146,24 +131,17 @@ public class SpcsAuthenticationTest {
     public void authenticationFailsWithEmptyHeader() throws Exception {
         try (ShinyProxyInstance inst = new ShinyProxyInstance("application-test-spcs-auth.yml")) {
             String baseUrl = "http://localhost:7583";
-            
-            OkHttpClient client = new OkHttpClient.Builder()
-                .callTimeout(Duration.ofSeconds(120))
-                .readTimeout(Duration.ofSeconds(120))
-                .followRedirects(false)
-                .build();
 
-            Request request = new Request.Builder()
-                .url(baseUrl + "/api/proxy")
-                .header("Sf-Context-Current-User", "")  // Empty header
-                .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/proxy"))
+                    .header("Sf-Context-Current-User", "")
+                    .GET()
+                    .build();
 
-            try (Response response = client.newCall(request).execute()) {
-                // Should fail authentication - empty header is treated as missing
-                Assertions.assertEquals(401, response.code());
-                String responseBody = response.body() != null ? response.body().string() : "";
-                Assertions.assertTrue(responseBody.contains("SPCS authentication failed"));
-            }
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            Assertions.assertEquals(401, response.statusCode());
+            String responseBody = response.body() != null ? response.body() : "";
+            Assertions.assertTrue(responseBody.contains("SPCS authentication failed"));
         }
     }
 }
