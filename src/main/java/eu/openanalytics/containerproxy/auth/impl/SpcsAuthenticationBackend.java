@@ -23,6 +23,10 @@ package eu.openanalytics.containerproxy.auth.impl;
 import eu.openanalytics.containerproxy.auth.IAuthenticationBackend;
 import eu.openanalytics.containerproxy.auth.impl.spcs.SpcsAuthenticationFilter;
 import eu.openanalytics.containerproxy.auth.impl.spcs.SpcsAuthenticationProvider;
+import eu.openanalytics.containerproxy.auth.impl.spcs.SpcsAuthenticationToken;
+import eu.openanalytics.containerproxy.model.runtime.Proxy;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.HttpString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,6 +36,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
 import java.util.Map;
@@ -67,6 +72,9 @@ public class SpcsAuthenticationBackend implements IAuthenticationBackend {
     private static final Logger logger = LoggerFactory.getLogger(SpcsAuthenticationBackend.class);
 
     public static final String NAME = "spcs";
+
+    private static final HttpString HEADER_USERNAME = new HttpString("Sf-Context-Current-User");
+    private static final HttpString HEADER_USER_TOKEN = new HttpString("Sf-Context-Current-User-Token");
 
     private final SpcsAuthenticationFilter filter;
 
@@ -125,6 +133,33 @@ public class SpcsAuthenticationBackend implements IAuthenticationBackend {
     @Override
     public String getLogoutSuccessURL() {
         return "/logout-success";
+    }
+
+    /**
+     * Adds SPCS user context headers from the current request's authentication.
+     * Called at request dispatch time (from HttpHeaders.getUndertowHeaderMap) so containers
+     * receive the current user and token on every request, including after recovery.
+     */
+    public static HeaderMap addHeaders(Proxy proxy) {
+        HeaderMap result = new HeaderMap();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof SpcsAuthenticationToken) {
+            Object principal = auth.getPrincipal();
+            if (principal != null) {
+                String username = principal.toString();
+                if (!username.isBlank()) {
+                    result.put(HEADER_USERNAME, username);
+                }
+            }
+            Object credentials = auth.getCredentials();
+            if (credentials != null) {
+                String userToken = credentials.toString();
+                if (!userToken.isBlank()) {
+                    result.put(HEADER_USER_TOKEN, userToken);
+                }
+            }
+        }
+        return result;
     }
 
 }

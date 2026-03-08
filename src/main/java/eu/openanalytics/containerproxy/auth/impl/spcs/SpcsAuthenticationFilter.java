@@ -109,8 +109,15 @@ public class SpcsAuthenticationFilter extends OncePerRequestFilter {
                         String.format("Username in header does not match existing session '%s'", 
                             existingAuthentication.getPrincipal()));
                 } else {
-                    // They match - user is already authenticated with the same identity
-                    // Continue the request without re-authenticating (performance optimization)
+                    // Same user: refresh SecurityContext with current request's token so downstream (e.g. addHeaders())
+                    // always sees the latest Sf-Context-Current-User-Token; we avoid calling the provider for performance.
+                    SpcsAuthenticationToken refreshedToken = new SpcsAuthenticationToken(
+                            spcsIngressUserName,
+                            spcsIngressUserToken,
+                            new java.util.ArrayList<>(existingAuthentication.getAuthorities()),
+                            new WebAuthenticationDetailsSource().buildDetails(request),
+                            true);
+                    SecurityContextHolder.getContext().setAuthentication(refreshedToken);
                     chain.doFilter(request, response);
                     return;
                 }

@@ -554,7 +554,7 @@ public class SpcsBackend extends AbstractContainerBackend {
             }
             proxyBuilder.addTargets(targets);
             String endpointUrl = extractEndpointUrlFromTargets(targets);
-            Map<String, String> headers = setupProxyContainerHTTPHeaders(proxy, endpointUrl, authentication);
+            Map<String, String> headers = setupProxyContainerHTTPHeaders(proxy, endpointUrl);
             proxyBuilder.addRuntimeValue(new RuntimeValue(HttpHeadersKey.inst, new HttpHeaders(headers)), true);
             proxyBuilder.updateContainer(rContainer);
             return proxyBuilder.build();
@@ -1360,7 +1360,7 @@ public class SpcsBackend extends AbstractContainerBackend {
                 if (existingTargets != null && !existingTargets.isEmpty()) {
                     Proxy.ProxyBuilder proxyBuilder = proxy.toBuilder();
                     String endpointUrl = extractEndpointUrlFromTargets(existingTargets);
-                    Map<String, String> headers = setupProxyContainerHTTPHeaders(proxy, endpointUrl, user);
+                    Map<String, String> headers = setupProxyContainerHTTPHeaders(proxy, endpointUrl);
                     proxyBuilder.addRuntimeValue(new RuntimeValue(HttpHeadersKey.inst, new HttpHeaders(headers)), true);
                     slog.info(proxy, String.format("Setting up Authorization header for SPCS ingress access on resume (auth method: %s)", snowflakeTokenType != null ? snowflakeTokenType : authMethod.name()));
                     slog.info(proxy, String.format("Resumed Snowflake service: %s", fullServiceName));
@@ -1396,9 +1396,8 @@ public class SpcsBackend extends AbstractContainerBackend {
                     String serviceSchema = parts[1];
                     String serviceName = parts[2];
                     try {
-                        boolean forceDelete = getForceDeleteForService(serviceName);
-                        deleteServiceWithForce(serviceDb, serviceSchema, serviceName, forceDelete);
-                        slog.info(proxy, String.format("Deleted Snowflake service: %s (force=%s)", fullServiceName, forceDelete));
+                        deleteService(serviceDb, serviceSchema, serviceName);
+                        slog.info(proxy, String.format("Deleted Snowflake service: %s", fullServiceName));
                     } catch (WebClientResponseException e) {
                         slog.warn(proxy, String.format("Error deleting Snowflake service %s: %s", fullServiceName, e.getMessage()));
                     }
@@ -1636,9 +1635,8 @@ public class SpcsBackend extends AbstractContainerBackend {
     private void deleteServiceLogReason(String serviceName, String reason) {
         log.warn("Deleting service {} due to: {}", serviceName, reason);
         try {
-            boolean forceDelete = getForceDeleteForService(serviceName);
-            deleteServiceWithForce(database, schema, serviceName, forceDelete);
-            log.info("Deleted Snowflake service: {}.{}.{} (force={})", database, schema, serviceName, forceDelete);
+            deleteService(database, schema, serviceName);
+            log.info("Deleted Snowflake service: {}.{}.{}", database, schema, serviceName);
         } catch (WebClientResponseException e) {
             log.warn("Error deleting Snowflake service {}.{}.{}: {}", database, schema, serviceName, e.getMessage());
         }
@@ -2125,56 +2123,31 @@ public class SpcsBackend extends AbstractContainerBackend {
     /**
      * Sets up HTTP headers for proxy container communication.
      * Sets Authorization header only when running external to SPCS (for ingress access).
-     * Adds SPCS user context headers when authenticated via SPCS.
-     * 
+     * SPCS user context headers (Sf-Context-Current-User, Sf-Context-Current-User-Token) are
+     * added per request by SpcsAuthenticationBackend.addHeaders() in HttpHeaders.getUndertowHeaderMap().
+     *
      * @param proxy The proxy (used to get existing headers and container info)
      * @param endpointUrl Optional endpoint URL for keypair auth token exchange scope (only used when external)
-     * @param authentication The authentication object (may be null, used to extract SPCS user token)
      * @return Map of merged headers
      */
-    private Map<String, String> setupProxyContainerHTTPHeaders(Proxy proxy, String endpointUrl, Authentication authentication) {
+    private Map<String, String> setupProxyContainerHTTPHeaders(Proxy proxy, String endpointUrl) {
         // Get existing headers from proxy and merge with new headers
         HttpHeaders existingHeaders = proxy.getRuntimeObject(HttpHeadersKey.inst);
-        Map<String, String> mergedHeaders = existingHeaders != null ? 
+        Map<String, String> mergedHeaders = existingHeaders != null ?
             new HashMap<>(existingHeaders.jsonValue()) : new HashMap<>();
-        
+
         // Set Authorization header only when running external to SPCS (needed for ingress access)
         if (!isRunningInsideSpcs()) {
-        String authorizationHeader = getIngressAuthorization(endpointUrl);
-        
-        if (authorizationHeader != null && !authorizationHeader.isEmpty()) {
-            mergedHeaders.put("Authorization", authorizationHeader);
-            log.info("Setting up Authorization header for SPCS ingress access (auth method: {})", authMethod);
-        } else if (authMethod == AuthMethod.KEYPAIR && endpointUrl != null) {
-            log.warn("Ingress authorization header not available for SPCS access (endpoint URL: {})", endpointUrl);
+            String authorizationHeader = getIngressAuthorization(endpointUrl);
+
+            if (authorizationHeader != null && !authorizationHeader.isEmpty()) {
+                mergedHeaders.put("Authorization", authorizationHeader);
+                log.info("Setting up Authorization header for SPCS ingress access (auth method: {})", authMethod);
+            } else if (authMethod == AuthMethod.KEYPAIR && endpointUrl != null) {
+                log.warn("Ingress authorization header not available for SPCS access (endpoint URL: {})", endpointUrl);
             }
         }
-        
-        // Add SPCS user headers if authenticated via SPCS
-        // These headers are forwarded to proxy containers so they can use the caller's identity
-        // Username header is always added when SPCS authenticated; token header only if available
-        if (authentication instanceof SpcsAuthenticationToken) {
-            // Add username header (always present when SPCS authenticated)
-            Object principal = authentication.getPrincipal();
-            if (principal != null) {
-                String username = principal.toString();
-                if (!username.isBlank()) {
-                    mergedHeaders.put("Sf-Context-Current-User", username);
-                    log.debug("Added Sf-Context-Current-User to proxy HttpHeaders");
-                }
-            }
-            
-            // Add user token header (only present when executeAsCaller=true on parent service)
-            Object credentials = authentication.getCredentials();
-            if (credentials != null) {
-                String userToken = credentials.toString();
-                if (!userToken.isBlank()) {
-                    mergedHeaders.put("Sf-Context-Current-User-Token", userToken);
-                    log.debug("Added Sf-Context-Current-User-Token to proxy HttpHeaders");
-                }
-            }
-        }
-        
+
         return mergedHeaders;
     }
 
@@ -2331,19 +2304,19 @@ public class SpcsBackend extends AbstractContainerBackend {
 
     /**
      * Gets the username used for authentication.
-     * 
+     *
      * @return The username, or null if using SPCS session token
      */
-    public String getUsername() {
+    String getUsername() {
         return username;
     }
 
     /**
      * Gets the authentication method currently being used.
-     * 
+     *
      * @return The authentication method
      */
-    public AuthMethod getAuthMethod() {
+    AuthMethod getAuthMethod() {
         return authMethod;
     }
 
@@ -2355,63 +2328,47 @@ public class SpcsBackend extends AbstractContainerBackend {
     public boolean isRunningInsideSpcs() {
         return authMethod == AuthMethod.SPCS_SESSION_TOKEN;
     }
-    
-    private boolean getForceDeleteForService(String serviceName) {
-        return true;
-    }
-    
+
     /**
-     * Deletes a Snowflake service, using SQL API for force deletion when needed.
-     * The REST API doesn't support force deletion, so we use SQL API when force=true.
-     * 
+     * Deletes a Snowflake service using the SQL API (DROP SERVICE ... FORCE).
+     * The REST API doesn't support force deletion, so we use the SQL API.
+     *
      * @param database Database name
      * @param schema Schema name
      * @param serviceName Service name
-     * @param force If true, uses SQL API to execute DROP SERVICE ... FORCE. If false, uses REST API.
      * @throws WebClientResponseException If the deletion fails
      */
-    private void deleteServiceWithForce(String database, String schema, String serviceName, boolean force) throws WebClientResponseException {
-        if (force) {
-            // Use SQL API to execute DROP SERVICE ... FORCE
-            // The REST API doesn't support force deletion
-            String sql = String.format("DROP SERVICE %s.%s.%s FORCE", 
-                escapeSqlIdentifier(database), 
-                escapeSqlIdentifier(schema), 
-                escapeSqlIdentifier(serviceName));
-            
-            SubmitStatementRequest request = new SubmitStatementRequest();
-            request.setStatement(sql);
-            // SQL API requires session context: set database and schema so DROP SERVICE runs in the correct namespace
-            request.setDatabase(database);
-            request.setSchema(schema);
-            // Warehouse is required by the SQL API
-            String computeWarehouse = getProperty(PROPERTY_COMPUTE_WAREHOUSE);
-            if (computeWarehouse != null && !computeWarehouse.isBlank()) {
-                request.setWarehouse(computeWarehouse.trim().toUpperCase());
-            }
-            
-            // Service management (including force delete) uses the shared client with service token only (disk, keypair, or PAT).
-            try {
-                // Pass null for token type so only the client's default header is sent (avoid duplicate X-Snowflake-Authorization-Token-Type).
-                snowflakeStatementsAPI.submitStatement(
-                    "ContainerProxy/1.0", // userAgent
-                    request,
-                    null, // requestId
-                    false, // async
-                    false, // nullable
-                    "application/json", // accept - required by Snowflake SQL API
-                    null   // xSnowflakeAuthorizationTokenType - use client default to avoid duplicate header (391912)
-                ).block();
-                log.debug("Successfully force deleted service {}.{}.{} using SQL API", database, schema, serviceName);
-            } catch (WebClientResponseException e) {
-                String responseBody = e.getResponseBodyAsString();
-                log.warn("Failed to force delete service {}.{}.{} using SQL API: {}; response body: {}", 
-                    database, schema, serviceName, e.getMessage(), responseBody != null && !responseBody.isEmpty() ? responseBody : "(empty)");
-                throw e;
-            }
-        } else {
-            // Use REST API for normal deletion
-            snowflakeServiceAPI.deleteService(database, schema, serviceName, false).block();
+    private void deleteService(String database, String schema, String serviceName) throws WebClientResponseException {
+        String sql = String.format("DROP SERVICE %s.%s.%s FORCE",
+            escapeSqlIdentifier(database),
+            escapeSqlIdentifier(schema),
+            escapeSqlIdentifier(serviceName));
+
+        SubmitStatementRequest request = new SubmitStatementRequest();
+        request.setStatement(sql);
+        request.setDatabase(database);
+        request.setSchema(schema);
+        String computeWarehouse = getProperty(PROPERTY_COMPUTE_WAREHOUSE);
+        if (computeWarehouse != null && !computeWarehouse.isBlank()) {
+            request.setWarehouse(computeWarehouse.trim().toUpperCase());
+        }
+
+        try {
+            snowflakeStatementsAPI.submitStatement(
+                "ContainerProxy/1.0",
+                request,
+                null,
+                false,
+                false,
+                "application/json",
+                null
+            ).block();
+            log.debug("Successfully force deleted service {}.{}.{} using SQL API", database, schema, serviceName);
+        } catch (WebClientResponseException e) {
+            String responseBody = e.getResponseBodyAsString();
+            log.warn("Failed to force delete service {}.{}.{} using SQL API: {}; response body: {}",
+                database, schema, serviceName, e.getMessage(), responseBody != null && !responseBody.isEmpty() ? responseBody : "(empty)");
+            throw e;
         }
     }
     
